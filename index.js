@@ -3,6 +3,7 @@ import cors from 'cors'
 import conexion from "./config/db.js";
 import dotenv from 'dotenv';
 import usuarioRoutes from './routes/usuarioRoutes.js'
+import tituladaRoutes from './routes/tituladaRoutes.js'
 
 const app = express()
 app.use(express.json())
@@ -28,6 +29,7 @@ const corsOptions = {
 app.use(cors(corsOptions))
 
 app.use('/api/usuarios', usuarioRoutes)
+app.use('/api/tituladas', tituladaRoutes)
 
 
 const PORT = process.env.PORT || 4000

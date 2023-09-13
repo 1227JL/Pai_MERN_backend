@@ -1,6 +1,6 @@
-import moongose from 'mongoose'
+import mongoose from 'mongoose'
 
-const tituladaSchema = moongose.Schema(
+const tituladaSchema = mongoose.Schema(
     {
         programa: {
             type: String,
@@ -9,7 +9,6 @@ const tituladaSchema = moongose.Schema(
         },
         ficha: {
             type: Number,
-            trim: true,
             required: true,
         },
         tipo: {
@@ -25,13 +24,46 @@ const tituladaSchema = moongose.Schema(
         estado: {
             type: String,
             required: true,
-            enum: ['Convocatoria', 'En Formación', 'En Etapa Productiva', 'Formación Finalizada']
+            enum: ['Convocatoria', 'Etapa Lectiva', 'Etapa Productiva', 'Formación Finalizada'],
+            default: 'Convocatoria',
         },
         modalidad: {
             type: String,
             required: true,
             enum: ['Presencial', 'Virtual']
         },
-
-    }
+        instructores: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Instructor',
+            }
+        ],
+        aprendices: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Aprendiz',
+            }
+        ],
+        ambiente: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Ambiente'
+        },
+        duracion: {
+            type: Number,
+            required: true
+        },
+        archivoAdjunto: {
+            type: String, // Puede ser una URL o un identificador de archivo
+            required: true
+        },
+        creador: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Usuario',
+        },
+    },
+    { timestamps: true }
 )
+
+const Titulada = mongoose.model('Titulada', tituladaSchema)
+
+export default Titulada

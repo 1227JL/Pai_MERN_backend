@@ -19,6 +19,10 @@ const usuarioSchema = mongoose.Schema(
             trim: true,
             unique: true
         },
+        telefono: {
+            type: Number,
+            required: true
+        },
         token: {
             type: String,
         },
@@ -29,8 +33,12 @@ const usuarioSchema = mongoose.Schema(
         rol: {
             type: String,
             required: true,
-            enum: ['Administrador', 'Instructor']
+            default: 'Administrador'
         },
+        imagen: {
+            type: String, // Puede ser una URL o un identificador de archivo
+            required: true
+        }
     },
     { timestamps: true }
 );
