@@ -26,7 +26,21 @@ const obtenerTituladas = async (req, res) => {
     res.json(tituladas)
 }
 
+const obtenerTitulada = async (req, res) => {
+    const { ficha } = req.params
+    
+    const titulada = await Titulada.findOne({ficha})
+
+    if(!titulada){
+        const error = new Error('Titulada no econtrada')
+        return res.status(404).json({msg: error.message})
+    }
+
+    res.json(titulada)
+}
+
 export {
     crearTitulada,
-    obtenerTituladas
+    obtenerTituladas,
+    obtenerTitulada
 }

@@ -54,7 +54,6 @@ const tituladaSchema = mongoose.Schema(
         },
         archivoAdjunto: {
             type: String, // Puede ser una URL o un identificador de archivo
-            required: true
         },
         creador: {
             type: mongoose.Schema.Types.ObjectId,
