@@ -2,7 +2,8 @@ import express from 'express'
 import { 
     crearTitulada,
     obtenerTituladas,
-    obtenerTitulada
+    obtenerTitulada,
+    editarTitulada
 } from '../controllers/tituladaController.js'
 import checkAuth from '../middleware/checkAuth.js'
 
@@ -16,8 +17,7 @@ router
 router
     .route('/:ficha')
     .get(checkAuth, obtenerTitulada)
-    .put(checkAuth, )
+    .put(checkAuth, editarTitulada)
     .delete(checkAuth, )
-
 
 export default router
