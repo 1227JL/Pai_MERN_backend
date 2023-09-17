@@ -15,7 +15,7 @@ router
     .post(checkAuth, crearTitulada)
 
 router
-    .route('/:ficha')
+    .route('/:id')
     .get(checkAuth, obtenerTitulada)
     .put(checkAuth, editarTitulada)
     .delete(checkAuth, )

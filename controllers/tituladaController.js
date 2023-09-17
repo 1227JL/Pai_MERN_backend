@@ -27,9 +27,9 @@ const obtenerTituladas = async (req, res) => {
 }
 
 const obtenerTitulada = async (req, res) => {
-    const { ficha } = req.params
+    const { id } = req.params
     
-    const titulada = await Titulada.findOne({ficha})
+    const titulada = await Titulada.findOne({ficha: id})
 
     if(!titulada){
         const error = new Error('Titulada no econtrada')
@@ -40,9 +40,9 @@ const obtenerTitulada = async (req, res) => {
 }
 
 const editarTitulada = async (req, res) => {
-    const { ficha } = req.params
+    const { id } = req.params
 
-    const titulada = await Titulada.findOne({ficha})
+    const titulada = await Titulada.findById(id)
 
     if(!titulada){
         const error = new Error('Titulada no existente')

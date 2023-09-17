@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import bcrypt from 'bcrypt';
+
 
 const instructorSchema = mongoose.Schema(
     {
@@ -11,11 +13,11 @@ const instructorSchema = mongoose.Schema(
             type: Number,
             required: true
         },
-        password: {
-            type: String,
-            required: true,
-            trim: true
-        },
+        // password: {
+        //     type: String,
+        //     required: true,
+        //     trim: true
+        // },
         email: {
             type: String,
             trim: true,
@@ -25,27 +27,37 @@ const instructorSchema = mongoose.Schema(
             type: Number,
             required: true
         },
-        token: {
-            type: String,
-        },
-        confirmado: {
-            type: Boolean,
-            default: false,     
-        },
+        // token: {
+        //     type: String,
+        // },
+        // confirmado: {
+        //     type: Boolean,
+        //     default: false,     
+        // },
         contrato: {
             type: String,
             required: true,
-            enum: ['Término Indefinido', 'Termino Fijo']
+            enum: ['Término Indefinido', 'Término Fijo']
         },
-        rol: {
+        // rol: {
+        //     type: String,
+        //     required: true,
+        //     default: 'Instructor'
+        // },
+        area: {
             type: String,
             required: true,
-            default: 'Instructor'
+            enum: ['Deportes', 'Gastronomia', 'Sistemas', 'Gestion', 'Idiomas']
         },
-        imagen: {
-            type: String, // Puede ser una URL o un identificador de archivo
-            required: true
+        estado: {
+            type: String,
+            required: true,
+            enum: ['Activo', 'Inactivo'],
+            default: 'Activo',
         },
+        // imagen: {
+        //     type: String, // Puede ser una URL o un identificador de archivo
+        // },
         horas: {
             type: Number,
             default: 0
@@ -63,6 +75,19 @@ const instructorSchema = mongoose.Schema(
     },
     { timestamps: true }
 )
+
+
+instructorSchema.pre('save', async function(next){
+    if(!this.isModified('password')){
+        next();
+    }
+    const salt = await bcrypt.genSalt(10)
+    this.password = await bcrypt.hash(this.password, salt)
+})
+
+instructorSchema.methods.comprobarPassword = async function(passwordFormulario){
+    return await bcrypt.compare(passwordFormulario, this.password)
+}
 
 const Instructor = mongoose.model('Instructor', instructorSchema)
 
