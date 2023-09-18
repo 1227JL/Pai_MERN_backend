@@ -23,7 +23,6 @@ const tituladaSchema = mongoose.Schema(
         },
         estado: {
             type: String,
-            required: true,
             enum: ['Convocatoria', 'Etapa Lectiva', 'Etapa Productiva', 'Formación Finalizada'],
             default: 'Convocatoria',
         },

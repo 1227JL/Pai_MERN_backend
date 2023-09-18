@@ -37,7 +37,7 @@ const obtenerTituladas = async (req, res) => {
 const obtenerTitulada = async (req, res) => {
     const { id } = req.params
     
-    const titulada = await Titulada.findOne({ficha: id}).populate('instructores', "nombre")
+    const titulada = await Titulada.findOne({ficha: id}).populate({ path: 'creador', select: "nombre email"}).populate('instructores', "nombre email").select("-__v")
 
     if(!titulada){
         const error = new Error('Titulada no econtrada')
@@ -48,9 +48,15 @@ const obtenerTitulada = async (req, res) => {
 }
 
 const editarTitulada = async (req, res) => {
-    const { id } = req.params
+    const { id, instructor } = req.params
 
-    const titulada = await Titulada.findById(id)
+    const titulada = await Titulada.findById(id).populate({ path: 'creador', select: "nombre"}).select("-__v")
+    const instructorExiste = await Instructor.findOne({id: instructor})
+
+    if(!instructorExiste){
+        const error = new Error('Instructor no existente')
+        return res.status(404).json({msg: error.message})
+    }
 
     if(!titulada){
         const error = new Error('Titulada no existente')
@@ -64,7 +70,7 @@ const editarTitulada = async (req, res) => {
     titulada.modalidad = req.body.modalidad || titulada.modalidad;
     titulada.duracion = req.body.duracion || titulada.duracion;
     titulada.estado = req.body.estado || titulada.estado;
-    titulada.instructores[0] = req.body.instructor || titulada.instructor[0]
+    titulada.instructores[0] = instructorExiste._id || titulada.instructor[0]
 
     try {
         const tituladaAlmacenada = await titulada.save()
@@ -74,9 +80,33 @@ const editarTitulada = async (req, res) => {
     }
 }
 
+const eliminarTitulada = async (req, res) => {
+    const { id } = req.params
+
+    const titulada = await Titulada.findById(id)
+
+    if(!titulada){
+        const error = new Error('Titulada no existente')
+        return res.status(404).json({msg: error.message})
+    }
+
+    if(titulada.creador.toString() !== req.usuario.id.toString()){
+        const error = new Error('Acción no válida')
+        return res.status(401).json({msg: error.message})
+    }
+
+    try {
+        await titulada.deleteOne()
+        res.json({msg: 'Titulada Eliminada'})
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 export {
     crearTitulada,
     obtenerTituladas,
     obtenerTitulada,
-    editarTitulada
+    editarTitulada,
+    eliminarTitulada
 }

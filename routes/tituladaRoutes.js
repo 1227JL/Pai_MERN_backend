@@ -3,7 +3,8 @@ import {
     crearTitulada,
     obtenerTituladas,
     obtenerTitulada,
-    editarTitulada
+    editarTitulada,
+    eliminarTitulada
 } from '../controllers/tituladaController.js'
 import checkAuth from '../middleware/checkAuth.js'
 
@@ -18,6 +19,6 @@ router
     .route('/:id')
     .get(checkAuth, obtenerTitulada)
     .put(checkAuth, editarTitulada)
-    .delete(checkAuth, )
+    .delete(checkAuth, eliminarTitulada)
 
 export default router
