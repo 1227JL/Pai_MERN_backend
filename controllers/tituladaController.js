@@ -1,18 +1,26 @@
+import Instructor from "../models/Instructor.js"
 import Titulada from "../models/Titulada.js"
 
 const crearTitulada = async (req, res) => {
     const { ficha } = req.body
 
     const existeTitulada = await Titulada.findOne({ficha})
+    const instructor = await Instructor.findById(req.body.instructor)
     
     if(existeTitulada){
         const error = new Error(`La ficha ${ficha} ya se encuentra asociada a una titulada`)
         return res.status(400).json({msg: error.message})
     }
-   
+    
+    if(!instructor){
+        const error = new Error('El instructor no se encuentra registrado')
+        return res.status(400).json({msg: error.message})
+    }
+
     try {
         const titulada = new Titulada(req.body)
         titulada.creador = req.usuario.id
+        titulada.instructores.push(instructor._id)
 
         const tituladaAlmacenada = await titulada.save()
         res.json(tituladaAlmacenada)
@@ -22,14 +30,14 @@ const crearTitulada = async (req, res) => {
 }
 
 const obtenerTituladas = async (req, res) => {
-    const tituladas = await Titulada.find().select("-creador -instructores -aprendices -duracion -createdAt -updatedAt -__v")
+    const tituladas = await Titulada.find().select("-instructores -updatedAt -__v")
     res.json(tituladas)
 }
 
 const obtenerTitulada = async (req, res) => {
     const { id } = req.params
     
-    const titulada = await Titulada.findOne({ficha: id})
+    const titulada = await Titulada.findOne({ficha: id}).populate('instructores', "nombre")
 
     if(!titulada){
         const error = new Error('Titulada no econtrada')
@@ -56,6 +64,7 @@ const editarTitulada = async (req, res) => {
     titulada.modalidad = req.body.modalidad || titulada.modalidad;
     titulada.duracion = req.body.duracion || titulada.duracion;
     titulada.estado = req.body.estado || titulada.estado;
+    titulada.instructores[0] = req.body.instructor || titulada.instructor[0]
 
     try {
         const tituladaAlmacenada = await titulada.save()
