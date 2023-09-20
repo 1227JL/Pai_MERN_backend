@@ -2,83 +2,94 @@ import Instructor from "../models/Instructor.js"
 import Titulada from "../models/Titulada.js"
 
 const crearTitulada = async (req, res) => {
-    const { ficha } = req.body
+  const { ficha } = req.body
 
-    const existeTitulada = await Titulada.findOne({ficha})
-    const instructor = await Instructor.findById(req.body.instructor)
-    
-    if(existeTitulada){
-        const error = new Error(`La ficha ${ficha} ya se encuentra asociada a una titulada`)
-        return res.status(400).json({msg: error.message})
-    }
-    
-    if(!instructor){
-        const error = new Error('El instructor no se encuentra registrado')
-        return res.status(400).json({msg: error.message})
-    }
+  const existeTitulada = await Titulada.findOne({ficha})
+  const instructor = await Instructor.findById(req.body.instructor)
+  
+  if(existeTitulada){
+    const error = new Error(`La ficha ${ficha} ya se encuentra asociada a una titulada`)
+    return res.status(400).json({msg: error.message})
+  }
+  
+  if(!instructor){
+    const error = new Error('El instructor no se encuentra registrado')
+    return res.status(400).json({msg: error.message})
+  }
 
-    try {
-        const titulada = new Titulada(req.body)
-        titulada.creador = req.usuario.id
-        titulada.instructores.push(instructor._id)
+  try {
+    const titulada = new Titulada(req.body)
+    titulada.creador = req.usuario.id
+    titulada.instructores.push(instructor._id)
 
-        const tituladaAlmacenada = await titulada.save()
-        res.json(tituladaAlmacenada)
-    } catch (error) {
-        res.send(error)
-    }
+    const tituladaAlmacenada = await titulada.save()
+    res.json(tituladaAlmacenada)
+  } catch (error) {
+    res.send(error)
+  }
 }
 
 const obtenerTituladas = async (req, res) => {
-    const tituladas = await Titulada.find().select("-instructores -updatedAt -__v")
-    res.json(tituladas)
+  const tituladas = await Titulada.find().select("-instructores -updatedAt -__v")
+  res.json(tituladas)
 }
 
 const obtenerTitulada = async (req, res) => {
-    const { id } = req.params
-    
-    const titulada = await Titulada.findOne({ficha: id}).populate({ path: 'creador', select: "nombre email"}).populate('instructores', "nombre email").select("-__v")
+  const { id } = req.params
+  
+  const titulada = await Titulada.findOne({ficha: id}).populate({ path: 'creador', select: "nombre email"}).populate('instructores', "nombre email").select("-__v")
 
-    if(!titulada){
-        const error = new Error('Titulada no econtrada')
-        return res.status(404).json({msg: error.message})
-    }
+  if(!titulada){
+    const error = new Error('Titulada no econtrada')
+    return res.status(404).json({msg: error.message})
+  }
 
-    res.json(titulada)
+  res.json(titulada)
 }
 
 const editarTitulada = async (req, res) => {
-    const { id, instructor } = req.params
+  const { id } = req.params;
+  const { instructor, ...actualizacion } = req.body; // Desestructura los datos de actualización
 
-    const titulada = await Titulada.findById(id).populate({ path: 'creador', select: "nombre"}).select("-__v")
-    const instructorExiste = await Instructor.findOne({id: instructor})
+  try {
+    const titulada = await Titulada.findById(id);
 
-    if(!instructorExiste){
-        const error = new Error('Instructor no existente')
-        return res.status(404).json({msg: error.message})
+    if (!titulada) {
+      return res.status(404).json({ msg: 'Titulada no existente' });
     }
 
-    if(!titulada){
-        const error = new Error('Titulada no existente')
-        return res.status(404).json({msg: error.message})
+    const instructorExiste = await Instructor.findOne({ _id: instructor });
+
+    if (!instructorExiste) {
+      return res.status(404).json({ msg: 'Instructor no existente' });
     }
 
-    titulada.programa = req.body.programa || titulada.programa;
-    titulada.ficha = req.body.ficha || titulada.ficha;
-    titulada.tipo = req.body.tipo || titulada.tipo;
-    titulada.jornada = req.body.jornada || titulada.jornada;
-    titulada.modalidad = req.body.modalidad || titulada.modalidad;
-    titulada.duracion = req.body.duracion || titulada.duracion;
-    titulada.estado = req.body.estado || titulada.estado;
-    titulada.instructores[0] = instructorExiste._id || titulada.instructor[0]
-
-    try {
-        const tituladaAlmacenada = await titulada.save()
-        res.json(tituladaAlmacenada)
-    } catch (error) {
-        console.log(error);
+    // Actualiza los campos de la titulada con los valores proporcionados en req.body
+    for (const key in actualizacion) {
+      if (actualizacion.hasOwnProperty(key)) {
+        titulada[key] = actualizacion[key];
+      }
     }
-}
+
+    // Actualiza el primer instructor (puedes ajustar esta lógica según tus necesidades)
+    if (instructorExiste._id) {
+      titulada.instructores[0] = instructorExiste._id;
+    }
+
+    // Guarda la titulada actualizada en la base de datos
+    const tituladaAlmacenada = await titulada.save();
+
+    // Realiza un populate de los instructores y del creador
+    const tituladaPopulada = await Titulada.findById(tituladaAlmacenada._id)
+      .populate({ path: 'creador', select: 'nombre email' })
+      .populate({ path: 'instructores', select: 'nombre email' });
+
+  res.json(tituladaPopulada);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ msg: 'Error interno del servidor' });
+  }
+};  
 
 const eliminarTitulada = async (req, res) => {
     const { id } = req.params
@@ -86,20 +97,15 @@ const eliminarTitulada = async (req, res) => {
     const titulada = await Titulada.findById(id)
 
     if(!titulada){
-        const error = new Error('Titulada no existente')
-        return res.status(404).json({msg: error.message})
-    }
-
-    if(titulada.creador.toString() !== req.usuario.id.toString()){
-        const error = new Error('Acción no válida')
-        return res.status(401).json({msg: error.message})
+      const error = new Error('Titulada no existente')
+      return res.status(404).json({msg: error.message})
     }
 
     try {
-        await titulada.deleteOne()
-        res.json({msg: 'Titulada Eliminada'})
+      await titulada.deleteOne()
+      res.json({msg: 'Titulada Eliminada'})
     } catch (error) {
-        console.log(error);
+      console.log(error);
     }
 }
 

@@ -39,7 +39,46 @@ const obtenerInstructores = async (req, res) => {
     res.json(instructores)
 }
 
+const obtenerInstructor = async (req, res) => {
+    const { id } = req.params
+
+    const instructor = await Instructor.findOne({identificacion: id})
+
+    if(!instructor){
+        const error = new Error('Instructor no existente')
+        return res.status(404).json({msg: error.message})
+    }
+
+    res.json(instructor);
+    console.log(instructor)
+}
+
+const actualizarInstructor = async (req, res) => {
+
+}
+
+const eliminarInstructor = async (req, res) => {
+    const { id } = req.params
+
+    const instructor = await Instructor.findById(id)
+
+    if(!instructor){
+        const error = new Error('Instructor no existente')
+        return res.status(404).json({msg: error.message})
+    }
+
+    try {
+        await instructor.deleteOne()
+        res.json({msg: 'Instructor Eliminado'})
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 export {
     registrarInstructor,
-    obtenerInstructores
+    obtenerInstructores,
+    obtenerInstructor,
+    actualizarInstructor,
+    eliminarInstructor
 }

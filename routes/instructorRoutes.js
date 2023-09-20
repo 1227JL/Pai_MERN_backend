@@ -2,7 +2,10 @@ import express from "express";
 import checkAuth from '../middleware/checkAuth.js'
 import {
     registrarInstructor,
-    obtenerInstructores
+    obtenerInstructores,
+    obtenerInstructor,
+    actualizarInstructor,
+    eliminarInstructor
 } from '../controllers/instructorController.js'
 
 const router = express.Router()
@@ -12,5 +15,10 @@ router
     .get(checkAuth, obtenerInstructores)
     .post(checkAuth, registrarInstructor)
 
+router
+    .route('/:id')
+    .get(checkAuth, obtenerInstructor)
+    .put(checkAuth, actualizarInstructor)
+    .delete(checkAuth, eliminarInstructor)
 
 export default router
