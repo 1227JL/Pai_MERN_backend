@@ -7,18 +7,19 @@ import {
     eliminarTitulada
 } from '../controllers/tituladaController.js'
 import checkAuth from '../middleware/checkAuth.js'
+import upload from '../middleware/upload.js'
 
 const router = express.Router()
 
 router
     .route('/')
     .get(checkAuth, obtenerTituladas)
-    .post(checkAuth, crearTitulada)
+    .post(checkAuth, upload, crearTitulada)
 
 router
     .route('/:id')
     .get(checkAuth, obtenerTitulada)
-    .put(checkAuth, editarTitulada)
+    .put(checkAuth, upload, editarTitulada)
     .delete(checkAuth, eliminarTitulada)
 
 export default router

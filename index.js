@@ -5,16 +5,15 @@ import dotenv from 'dotenv';
 import usuarioRoutes from './routes/usuarioRoutes.js'
 import tituladaRoutes from './routes/tituladaRoutes.js'
 import instructorRoutes from './routes/instructorRoutes.js'
+import ambienteRoutes from './routes/ambienteRoutes.js'
 
 const app = express()
 app.use(express.json())
-
 dotenv.config()
 conexion()
 
-// Routing
-
 const whitelist = [process.env.FRONTEND_URL]
+
 const corsOptions = {
     origin:function(origin, callback) {
         if(!origin){ //Postman request have not origin 
@@ -26,13 +25,13 @@ const corsOptions = {
         }
     }
 }
-
 app.use(cors(corsOptions))
 
 app.use('/api/usuarios', usuarioRoutes)
 app.use('/api/tituladas', tituladaRoutes)
 app.use('/api/instructores', instructorRoutes)
-
+app.use('/api/ambientes', ambienteRoutes)
+app.use('/uploads', express.static('uploads'))
 
 const PORT = process.env.PORT || 4000
 const servidor = app.listen(PORT, ()=>{

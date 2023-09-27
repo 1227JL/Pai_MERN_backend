@@ -1,5 +1,6 @@
 import Instructor from "../models/Instructor.js"
 import Titulada from "../models/Titulada.js"
+import fs from 'fs'
 
 const crearTitulada = async (req, res) => {
   const { ficha } = req.body
@@ -21,11 +22,13 @@ const crearTitulada = async (req, res) => {
     const titulada = new Titulada(req.body)
     titulada.creador = req.usuario.id
     titulada.instructores.push(instructor._id)
+    titulada.archivoAdjunto = req.file.filename
 
     const tituladaAlmacenada = await titulada.save()
     res.json(tituladaAlmacenada)
   } catch (error) {
-    res.send(error)
+    console.error(error)
+    res.status(500).send('Hubo un error al guardar la Titulada')
   }
 }
 
@@ -74,6 +77,13 @@ const editarTitulada = async (req, res) => {
     // Actualiza el primer instructor (puedes ajustar esta lógica según tus necesidades)
     if (instructorExiste._id) {
       titulada.instructores[0] = instructorExiste._id;
+    }
+
+    if(req.file){
+      if (fs.existsSync(`./uploads/${titulada.archivoAdjunto}`)) {
+        fs.unlinkSync(`./uploads/${titulada.archivoAdjunto}`);
+      }
+      titulada.archivoAdjunto = req.file.filename
     }
 
     // Guarda la titulada actualizada en la base de datos

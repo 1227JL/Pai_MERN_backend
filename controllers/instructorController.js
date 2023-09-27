@@ -28,7 +28,7 @@ const registrarInstructor = async (req, res) => {
 
         await instructor.save()
     
-        res.json({msg: 'Instructor Registrado Correctamente'})
+        res.json(instructor)
     } catch (error) {
         res.send(error)
     }
@@ -54,6 +54,29 @@ const obtenerInstructor = async (req, res) => {
 }
 
 const actualizarInstructor = async (req, res) => {
+    const { id } = req.params
+    const {...actualizacion} = req.body
+    
+    const instructor = await Instructor.findById(id)
+
+    if(!instructor){
+        const error = new Error("Instructor no existente")
+        return res.status(404).json({msg: error.message})
+    }
+
+    try {
+        for(const key in actualizacion){
+            if(actualizacion.hasOwnProperty(key)){
+                instructor[key] = actualizacion[key]
+            }
+        }
+
+        const instructorAlmacenado = await instructor.save()
+        res.json(instructorAlmacenado)
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ msg: 'Error interno del servidor' });
+    }
 
 }
 
