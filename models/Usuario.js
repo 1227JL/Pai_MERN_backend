@@ -21,7 +21,7 @@ const usuarioSchema = mongoose.Schema(
         },
         telefono: {
             type: Number,
-            required: true
+            // required: true
         },
         token: {
             type: String,
@@ -37,7 +37,6 @@ const usuarioSchema = mongoose.Schema(
         },
         imagen: {
             type: String, // Puede ser una URL o un identificador de archivo
-            required: true
         }
     },
     { timestamps: true }

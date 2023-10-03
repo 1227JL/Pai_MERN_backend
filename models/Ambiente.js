@@ -18,7 +18,7 @@ const ambienteSchema = mongoose.Schema(
         categoria: {
             type: String,
             enum: ['Cocina', 'Informática', 'Otro'], // Enumera las categorías posibles
-            default: 'Otro' // Valor por defecto
+            required: true
         },
         estado: {
             type: String,
