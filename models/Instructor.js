@@ -52,7 +52,7 @@ const instructorSchema = mongoose.Schema(
         estado: {
             type: String,
             required: true,
-            enum: ['Activo', 'Inactivo'],
+            enum: ['Activo', 'Inactivo', 'Vacaciones'],
             default: 'Activo',
         },
         // imagen: {

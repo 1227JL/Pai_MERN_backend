@@ -92,7 +92,7 @@ const eliminarInstructor = async (req, res) => {
 
     try {
         await instructor.deleteOne()
-        res.json({msg: 'Instructor Eliminado'})
+        res.json({msg: 'Instructor Eliminado Correctamente'})
     } catch (error) {
         console.log(error);
     }

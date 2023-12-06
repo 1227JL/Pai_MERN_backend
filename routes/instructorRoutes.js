@@ -17,7 +17,6 @@ router
 
 router
     .route('/:id')
-    .get(checkAuth, obtenerInstructor)
     .put(checkAuth, actualizarInstructor)
     .delete(checkAuth, eliminarInstructor)
 

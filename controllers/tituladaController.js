@@ -2,6 +2,7 @@ import Instructor from "../models/Instructor.js"
 import Titulada from "../models/Titulada.js"
 import fs from 'fs'
 import multer from "multer"; 
+import conexion from "../config/db.js";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -73,6 +74,7 @@ const crearTitulada = async (req, res) => {
 }
 
 const obtenerTituladas = async (req, res) => {
+  await conexion()
   const tituladas = await Titulada.find().select("-instructores -updatedAt -__v").populate('ambiente')
   res.json(tituladas)
 }
@@ -87,13 +89,13 @@ const obtenerTitulada = async (req, res) => {
   })
   .populate('instructores', 'nombre email')
   .populate('ambiente', 'bloque numero')
+  .populate('aprendices')
   .select('-__v');
 
   if(!titulada){
     const error = new Error('Titulada no econtrada')
     return res.status(404).json({msg: error.message})
   }
-
   res.json(titulada)
 }
 
@@ -113,7 +115,6 @@ const editarTitulada = async (req, res) => {
 
     if(titulada.ficha != ficha){
       const existeTitulada = await Titulada.findOne({ ficha });
-      console.log('La ficha que se ingreso en el form es disitna a la de la titulada')
 
       if (existeTitulada) {
         // Elimina el archivo cargado si la titulada ya existe
@@ -125,7 +126,7 @@ const editarTitulada = async (req, res) => {
       }
     }
 
-    if ((ambiente._id && titulada.ambiente != ambiente._id) || (!ambiente._id && titulada.ambiente != ambiente)) {
+    if ((ambiente?._id && titulada?.ambiente != ambiente?._id) || (!ambiente?._id && titulada?.ambiente != ambiente)) {
       const ambienteNoDisponible = await Titulada.findOne({ ambiente, jornada });
       
       if (ambienteNoDisponible) {
@@ -150,7 +151,7 @@ const editarTitulada = async (req, res) => {
     }
 
     // Actualiza el primer instructor (puedes ajustar esta lógica según tus necesidades)
-    if (instructorExiste._id) {
+    if (instructorExiste) {
       titulada.instructores[0] = instructorExiste._id;
     }
 
@@ -170,6 +171,7 @@ const editarTitulada = async (req, res) => {
         .populate({ path: 'creador', select: 'nombre email' })
         .populate({ path: 'instructores', select: 'nombre email' })
         .populate({ path: 'ambiente', select: 'bloque numero'})
+        .populate('aprendices')
   
       res.json(tituladaPopulada);
     } catch (error) {
@@ -195,7 +197,7 @@ const eliminarTitulada = async (req, res) => {
       }
 
       await titulada.deleteOne()
-      res.json({msg: 'Titulada Eliminada'})
+      res.json({msg: 'Titulada Eliminada Correctamente'})
     } catch (error) {
       console.log(error);
     }

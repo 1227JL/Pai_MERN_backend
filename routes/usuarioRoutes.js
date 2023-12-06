@@ -8,7 +8,6 @@ import {
     nuevoPassword,
     perfil,
 } from "../controllers/usuarioController.js";
-import checkAuth from '../middleware/checkAuth.js'
 
 
 const router = express.Router();
@@ -19,7 +18,7 @@ router.get('/confirmar/:token', confirmar) // Autentica el usuario registrado
 router.post('/olvide-password', olvidePassword) // Genera el token que se envia al email para realizar el cambio de la contraseña
 router.route('/olvide-password/:token').get(comprobarToken).post(nuevoPassword)
 
-router.get('/perfil', checkAuth, perfil)
+router.get('/perfil', perfil)
 
 
 export default router

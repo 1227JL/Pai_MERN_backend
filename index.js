@@ -6,6 +6,7 @@ import usuarioRoutes from './routes/usuarioRoutes.js'
 import tituladaRoutes from './routes/tituladaRoutes.js'
 import instructorRoutes from './routes/instructorRoutes.js'
 import ambienteRoutes from './routes/ambienteRoutes.js'
+import aprendizRoutes from './routes/aprendizRoutes.js'
 
 const app = express()
 app.use(express.json())
@@ -31,6 +32,7 @@ app.use('/api/usuarios', usuarioRoutes)
 app.use('/api/tituladas', tituladaRoutes)
 app.use('/api/instructores', instructorRoutes)
 app.use('/api/ambientes', ambienteRoutes)
+app.use('/api/aprendices', aprendizRoutes)
 app.use('/uploads', express.static('uploads'))
 app.use((err, req, res, next) => {
     console.error(err);
