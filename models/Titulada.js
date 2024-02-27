@@ -54,6 +54,21 @@ const tituladaSchema = mongoose.Schema(
         archivoAdjunto: {
             type: String, // Puede ser una URL o un identificador de archivo
         },
+        competencias: [
+            {
+                nombre: {
+                    type: String,
+                },
+                serial: {
+                    type: Number
+                },
+                estado: {
+                    type: String,
+                    enum: ['Pendiente', 'Realizada'],
+                    default: 'Pendiente'
+                }
+            }
+        ],
         creador: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Usuario',

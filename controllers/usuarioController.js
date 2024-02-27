@@ -1,4 +1,3 @@
-import conexion from "../config/db.js";
 import { emailRegistro, emailOlvidePassword } from "../helpers/emails.js";
 import generarId from "../helpers/generarId.js";
 import generatJWT from "../helpers/generarJWT.js";
@@ -32,7 +31,6 @@ const registrar = async (req, res) => {
 }
 
 const autenticar = async (req, res) => {
-    await conexion()
     const { email, password } = req.body
 
     const usuario = await Usuario.findOne({email})
@@ -143,9 +141,7 @@ const nuevoPassword = async (req, res) => {
 }
 
 const perfil = async (req, res) => {
-    console.log(req.usuario)
     const { usuario } = req
-
     res.json(usuario)
 }
 
