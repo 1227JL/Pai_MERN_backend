@@ -93,6 +93,7 @@ const obtenerTituladas = async (req, res) => {
   const tituladas = await Titulada.find()
     .select("-instructores -updatedAt -__v")
     .populate("ambiente");
+
   res.json(tituladas);
 };
 

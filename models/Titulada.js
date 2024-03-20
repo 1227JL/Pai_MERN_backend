@@ -59,7 +59,7 @@ const tituladaSchema = mongoose.Schema(
                 nombre: {
                     type: String,
                 },
-                serial: {
+                'código_norma': {
                     type: Number
                 },
                 estado: {
