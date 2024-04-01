@@ -1,24 +1,28 @@
+import sys  # Importamos el módulo sys para acceder a los argumentos de la línea de comandos
 import fitz  # PyMuPDF
 import json
 import re  # Importamos la biblioteca de expresiones regulares
 
 def extract_section_content(pdf_path, start_phrase, end_phrase):
     doc = fitz.open(pdf_path)
-    content = []
+    all_contents = []  # Lista para almacenar todas las secciones extraídas
+    content = []  # Inicializamos el contenido para la captura de texto
     capture = False
     for page in doc:
         text_blocks = page.get_text("blocks")
         for block in text_blocks:
             block_text = block[4]
             if start_phrase in block_text:
-                capture = True
+                capture = True  # Iniciamos la captura de texto
+                content = []  # Reiniciamos el contenido para capturar una nueva sección
             if capture:
                 content.append(block_text)
             if end_phrase in block_text and capture:
-                combined_content = "\n".join(content)
-                return combined_content
-    combined_content = "\n".join(content)
-    return combined_content
+                content.append(block_text)  # Aseguramos incluir el bloque con la frase final
+                all_contents.append("\n".join(content))  # Agregamos la sección capturada
+                capture = False  # Finalizamos la captura de esta sección
+    return all_contents  # Retornamos todas las secciones extraídas
+
 
 def extract_information(content):
     extracted_info = {
@@ -29,7 +33,9 @@ def extract_information(content):
         "resultados_aprendizaje": []
     }
 
-    descripcion_general_pattern = re.compile(r"CONTENIDOS CURRICULARES DE LA COMPETENCIA.*?(\bAPLICACIÓN DE CONOCIMIENTOS DE LAS CIENCIAS NATURALES DE ACUERDO CON\sSITUACIONES DEL CONTEXTO PRODUCTIVO Y SOCIAL\b)", re.DOTALL | re.IGNORECASE)
+    # Ajuste de la expresión regular para capturar de manera más flexible
+    descripcion_general_pattern = re.compile(r"CONTENIDOS CURRICULARES DE LA COMPETENCIA(.*?)4\.1", re.DOTALL | re.IGNORECASE)
+    
     codigo_norma_pattern = re.compile(r"(\d{9})")
     
     # Ajustamos la expresión regular para el nombre de la competencia para capturar el texto después de "4.3 NOMBRE DE LA\nCOMPETENCIA\n"
@@ -40,6 +46,7 @@ def extract_information(content):
 
     descripcion_general_match = descripcion_general_pattern.search(content)
     if descripcion_general_match:
+        # Usamos .strip() para limpiar espacios al inicio y final del texto capturado
         extracted_info["descripcion_general"] = descripcion_general_match.group(1).strip()
 
     codigo_norma_match = codigo_norma_pattern.search(content)
@@ -53,7 +60,9 @@ def extract_information(content):
 
     duracion_maxima_match = duracion_maxima_pattern.search(content)
     if duracion_maxima_match:
-        extracted_info["duracion_maxima"] = duracion_maxima_match.group(1)
+        # Extraer solo los dígitos del string obtenido
+        solo_numeros = ''.join(re.findall(r'\d+', duracion_maxima_match.group(1)))
+        extracted_info["duracion_maxima"] = solo_numeros
 
     resultados_aprendizaje_matches = resultados_aprendizaje_pattern.findall(content)
     for match in resultados_aprendizaje_matches:
@@ -66,17 +75,22 @@ def extract_information(content):
     extracted_info["resultados_aprendizaje"].sort(key=lambda x: int(x.split()[0]))
 
     return extracted_info
+
 def main():
-    pdf_path = "test/Diseno_curricular.pdf"  # Actualiza esto a la ruta correcta
+    pdf_path = sys.argv[1]  # Asegúrate de que el script se llama con un argumento de ruta de archivo
     start_phrase = "4.	CONTENIDOS CURRICULARES DE LA COMPETENCIA"
     end_phrase = "4.6 CONOCIMIENTOS"
     
-    content = extract_section_content(pdf_path, start_phrase, end_phrase)
-    extracted_info = extract_information(content)
-    
-    # Convertir la información extraída a JSON para visualización
-    json_object = json.dumps(extracted_info, indent=4)
-    print(json_object)
+    all_contents = extract_section_content(pdf_path, start_phrase, end_phrase)
+    all_extracted_info = []
 
+    for content in all_contents:
+        extracted_info = extract_information(content)
+        all_extracted_info.append(extracted_info)
+    
+    # Convertimos toda la información extraída de las secciones a JSON para visualización
+    competencias_json = json.dumps(all_extracted_info, indent=4)
+    print(competencias_json)
+    
 if __name__ == "__main__":
     main()

@@ -32,7 +32,7 @@ router
 router
   .route("/:id")
   .get(checkAuth, obtenerTitulada)
-  .put(checkAuth, editarTitulada)
+  .put(checkAuth, upload.single("file"), editarTitulada)
   .delete(checkAuth, eliminarTitulada);
 
 export default router;

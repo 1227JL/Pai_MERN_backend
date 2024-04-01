@@ -56,12 +56,23 @@ const tituladaSchema = mongoose.Schema(
         },
         competencias: [
             {
-                nombre: {
+                descripcion_general: {
                     type: String,
                 },
-                'código_norma': {
+                codigo_norma: {
                     type: Number
                 },
+                nombre_competencia: {
+                    type: String
+                },
+                duracion_maxima: {
+                    type: Number
+                },
+                resultados_aprendizaje: [
+                    {
+                        type: String
+                    }
+                ],
                 estado: {
                     type: String,
                     enum: ['Pendiente', 'Realizada'],
