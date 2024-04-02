@@ -3,7 +3,31 @@ import fitz  # PyMuPDF
 import json
 import re  # Importamos la biblioteca de expresiones regulares
 
-def extract_section_content(pdf_path, start_phrase, end_phrase):
+import unicodedata
+
+def normalize_text(text):
+    # Normalizar el texto para la comparación, eliminando tildes y caracteres especiales
+    return unicodedata.normalize('NFD', text).encode('ascii', 'ignore').decode('utf-8')
+
+def extract_until_end_phrase(pdf_path, end_phrase):
+    doc = fitz.open(pdf_path)
+    content = []
+    normalized_end_phrase = normalize_text(end_phrase)
+    for page in doc:
+        text_blocks = page.get_text("blocks")
+        for block in text_blocks:
+            block_text = normalize_text(block[4])
+            content.append(block_text)
+            if normalized_end_phrase in block_text:
+                break  # Detiene la captura tras encontrar la frase de fin
+        else:
+            # Esto asegura que si no se encuentra la frase de fin en la página actual, continuamos con la siguiente página
+            continue
+        # Si encontramos la frase de fin y salimos del bucle interno, rompemos el bucle de la página también
+        break
+    return "\n".join(content)
+
+def extract_competencias(pdf_path, start_phrase, end_phrase):
     doc = fitz.open(pdf_path)
     all_contents = []  # Lista para almacenar todas las secciones extraídas
     content = []  # Inicializamos el contenido para la captura de texto
@@ -24,7 +48,7 @@ def extract_section_content(pdf_path, start_phrase, end_phrase):
     return all_contents  # Retornamos todas las secciones extraídas
 
 
-def extract_information(content):
+def extract_information_competencia(content):
     extracted_info = {
         "descripcion_general": "",
         "codigo_norma": "",
@@ -76,21 +100,61 @@ def extract_information(content):
 
     return extracted_info
 
-def main():
-    pdf_path = sys.argv[1]  # Asegúrate de que el script se llama con un argumento de ruta de archivo
-    start_phrase = "4.	CONTENIDOS CURRICULARES DE LA COMPETENCIA"
-    end_phrase = "4.6 CONOCIMIENTOS"
+def extract_information_titulada(content):
+    print(content)
+    extracted_info = {
+        "programa": ""  # Proporciona un valor inicial para "programa"
+        'titulo'
+    }
+
+    # Ajuste de la expresión regular para capturar de manera más flexible
+    programa_pattern = re.compile(r"(.*?)1\. INFORMACION BASICA DEL PROGRAMA DE FORMACION TITULADA", re.DOTALL | re.IGNORECASE)
+
+    titulo_pattern = re.compile(r"1\.7 TITULO O\nCERTIFICADO QUE\nOBTENDRA\n\n(.+?)(?=\n\d+\.)", re.DOTALL | re.IGNORECASE)
     
-    all_contents = extract_section_content(pdf_path, start_phrase, end_phrase)
+    programa_match = programa_pattern.search(content)
+    
+    if programa_match:
+        # Usamos .strip() para limpiar espacios al inicio y final del texto capturado
+        content_extracted = programa_match.group(1).strip()
+
+        # Dividimos el contenido extraído por líneas y filtramos las líneas vacías
+        lines = [line.strip() for line in content_extracted.split('\n') if line.strip()]
+
+        # Tomamos solo la última línea no vacía si hay alguna línea disponible
+        if lines:
+            last_line = lines[-1]
+            extracted_info["programa"] = last_line
+            
+    titulo_match = titulo_pattern.search(content)
+    if titulo_match:
+        # Usamos .strip() para limpiar espacios al inicio y final del texto capturado
+        extracted_info["titulo"] = titulo_match.group(1).strip()
+
+    return extracted_info
+
+def main():
+    pdf_path = 'test/Diseno_curricular.pdf'  # Asegúrate de que el script se llama con un argumento de ruta de archivo
+    
+    end_phrase_section1 = "2.1 PERFIL OCUPACIONAL"
+    
+    content_until_end_phrase = extract_until_end_phrase(pdf_path, end_phrase_section1)
+    
+    start_phrase_section2 = "4.	CONTENIDOS CURRICULARES DE LA COMPETENCIA"
+    end_phrase_section2 = "4.6 CONOCIMIENTOS"
+    
+    all_contents = extract_competencias(pdf_path, start_phrase_section2, end_phrase_section2)
     all_extracted_info = []
+    titulada_info = extract_information_titulada(content_until_end_phrase)
+    print(titulada_info)
 
     for content in all_contents:
-        extracted_info = extract_information(content)
+        extracted_info = extract_information_competencia(content)
         all_extracted_info.append(extracted_info)
     
     # Convertimos toda la información extraída de las secciones a JSON para visualización
     competencias_json = json.dumps(all_extracted_info, indent=4)
-    print(competencias_json)
+    # print(competencias_json)
     
 if __name__ == "__main__":
     main()

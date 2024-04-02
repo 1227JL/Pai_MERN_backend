@@ -34,7 +34,6 @@ const crearTitulada = async (req, res) => {
     const pythonProcess = spawn("python", ["test/pdfreader.py", req.file.path]);
 
     pythonProcess.stdout.on("data", (data) => {
-      console.log(contenidoExtraidoDelPDF)
       contenidoExtraidoDelPDF += data.toString();    
     });
 
@@ -157,8 +156,6 @@ const editarTitulada = async (req, res) => {
   }
 };
 
-
-
 const eliminarTitulada = async (req, res) => {
   const { id } = req.params;
 
@@ -170,8 +167,8 @@ const eliminarTitulada = async (req, res) => {
   }
 
   try {
-    if (fs.existsSync(`./uploads/${titulada.archivoAdjunto}`)) {
-      fs.unlinkSync(`./uploads/${titulada.archivoAdjunto}`);
+    if (fs.existsSync(`./uploads/disenoCurriculares${titulada.archivoAdjunto}`)) {
+      fs.unlinkSync(`./uploads/disenoCurriculares${titulada.archivoAdjunto}`);
     }
 
     await titulada.deleteOne();
