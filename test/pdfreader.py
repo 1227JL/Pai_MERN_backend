@@ -19,34 +19,30 @@ def extract_until_end_phrase(pdf_path, end_phrase):
             block_text = normalize_text(block[4])
             content.append(block_text)
             if normalized_end_phrase in block_text:
-                break  # Detiene la captura tras encontrar la frase de fin
+                break
         else:
-            # Esto asegura que si no se encuentra la frase de fin en la página actual, continuamos con la siguiente página
             continue
-        # Si encontramos la frase de fin y salimos del bucle interno, rompemos el bucle de la página también
         break
     return "\n".join(content)
 
 def extract_competencias(pdf_path, start_phrase, end_phrase):
     doc = fitz.open(pdf_path)
-    all_contents = []  # Lista para almacenar todas las secciones extraídas
-    content = []  # Inicializamos el contenido para la captura de texto
+    all_contents = []
+    content = []
     capture = False
     for page in doc:
         text_blocks = page.get_text("blocks")
         for block in text_blocks:
             block_text = block[4]
             if start_phrase in block_text:
-                capture = True  # Iniciamos la captura de texto
-                content = []  # Reiniciamos el contenido para capturar una nueva sección
+                capture = True
+                content = []
             if capture:
                 content.append(block_text)
             if end_phrase in block_text and capture:
-                content.append(block_text)  # Aseguramos incluir el bloque con la frase final
-                all_contents.append("\n".join(content))  # Agregamos la sección capturada
-                capture = False  # Finalizamos la captura de esta sección
-    return all_contents  # Retornamos todas las secciones extraídas
-
+                all_contents.append("\n".join(content))
+                capture = False
+    return all_contents
 
 def extract_information_competencia(content):
     extracted_info = {
@@ -60,15 +56,14 @@ def extract_information_competencia(content):
     descripcion_general_pattern = re.compile(r"CONTENIDOS CURRICULARES DE LA COMPETENCIA(.*?)4\.1", re.DOTALL | re.IGNORECASE)
     codigo_norma_pattern = re.compile(r"(\d{9})")
     nombre_competencia_pattern = re.compile(r"4\.3 NOMBRE DE LA\nCOMPETENCIA\n(.+?)\n", re.DOTALL)
+  
     duracion_maxima_pattern = re.compile(r"(\d+ horas)")
+    # Ajustamos el patrón para capturar resultados que empiezan con '0'
     resultados_aprendizaje_pattern = re.compile(r"\n(\d{2}\s+.+?)(?=\n\d{2}\s+|$)", re.DOTALL)
 
     descripcion_general_match = descripcion_general_pattern.search(content)
     if descripcion_general_match:
-        descripcion_general = descripcion_general_match.group(1).strip()
-        if descripcion_general.endswith('.'):
-            descripcion_general = descripcion_general[:-1]
-        extracted_info["descripcion_general"] = descripcion_general
+        extracted_info["descripcion_general"] = descripcion_general_match.group(1).strip().rstrip('.')
 
     codigo_norma_match = codigo_norma_pattern.search(content)
     if codigo_norma_match:
@@ -76,30 +71,41 @@ def extract_information_competencia(content):
 
     nombre_competencia_match = nombre_competencia_pattern.search(content)
     if nombre_competencia_match:
-        nombre_competencia = nombre_competencia_match.group(1).strip()
-        if nombre_competencia.endswith('.'):
-            nombre_competencia = nombre_competencia[:-1]
-        extracted_info["nombre_competencia"] = nombre_competencia
+        nombre_competencia = nombre_competencia_match.group(1).strip().rstrip('.')
+        # Comprobamos si el nombre de la competencia extraído es efectivamente un título de sección
+        if nombre_competencia == "4.5 RESULTADOS DE APRENDIZAJE":
+            extracted_info["nombre_competencia"] = "La competencia no cuenta con un nombre"  # Reemplazamos con un espacio en blanco
+        else:
+            extracted_info["nombre_competencia"] = nombre_competencia
 
     duracion_maxima_match = duracion_maxima_pattern.search(content)
     if duracion_maxima_match:
-        solo_numeros = ''.join(re.findall(r'\d+', duracion_maxima_match.group(1)))
-        extracted_info["duracion_maxima"] = solo_numeros
+        extracted_info["duracion_maxima"] = ''.join(re.findall(r'\d+', duracion_maxima_match.group(1)))
+
+    resultados_aprendizaje_pattern = re.compile(r"\n(\d{2}\s+.+?)(?=\n\d{2}\s+|$)", re.DOTALL)
 
     resultados_aprendizaje_matches = resultados_aprendizaje_pattern.findall(content)
-    for match in resultados_aprendizaje_matches:
-        resultado_aprendizaje = match.strip()
-        if resultado_aprendizaje.endswith('.'):
-            resultado_aprendizaje = resultado_aprendizaje[:-1]
-        extracted_info["resultados_aprendizaje"].append(resultado_aprendizaje)
+    incremento = 1  # Inicializamos el contador para generar números incrementales
+    resultados_procesados = []
 
-    # Si necesitas eliminar el primer índice y ya lo has hecho, considera el contexto específico de tu aplicación
-    # extracted_info["resultados_aprendizaje"] = extracted_info["resultados_aprendizaje"][1:]
-    
-    # No es necesario ordenar si ya estás satisfecho con el orden en el que vienen los resultados de aprendizaje
-    # extracted_info["resultados_aprendizaje"].sort(key=lambda x: int(x.split()[0]))
+    for match in resultados_aprendizaje_matches:
+        resultado_aprendizaje = match.strip().split("\n")[0]
+
+        # Filtramos resultados que no son válidos como '001 horas'
+        if not resultado_aprendizaje.lower().endswith("horas"):
+            if not resultado_aprendizaje.startswith("0"):
+                resultado_aprendizaje = "0{} {}".format(str(incremento).zfill(2), resultado_aprendizaje[3:])
+                incremento += 1
+            resultados_procesados.append(resultado_aprendizaje)
+
+    # Ordenamos los resultados procesados
+    resultados_procesados.sort(key=lambda x: int(x.split()[0]))
+    extracted_info["resultados_aprendizaje"] = resultados_procesados
 
     return extracted_info
+
+# Las funciones extract_until_end_phrase, extract_competencias, extract_information_titulada, y main permanecen sin cambios.
+
 def extract_information_titulada(content):
     extracted_info = {
         "programa": "",  # Para el programa o área de formación
@@ -140,7 +146,7 @@ def extract_information_titulada(content):
     return extracted_info
 
 def main():
-    pdf_path = sys.argv[1] # Asegúrate de que el script se llama con un argumento de ruta de archivo
+    pdf_path = 'test/Diseno_curricular.pdf' # Asegúrate de que el script se llama con un argumento de ruta de archivo
     
     end_phrase_section1 = "2.1 PERFIL OCUPACIONAL"
     

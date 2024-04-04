@@ -3,6 +3,10 @@ import Instructor from "../models/Instructor.js";
 import Titulada from "../models/Titulada.js";
 import fs from "fs";
 import capitalize from "../helpers/capitalize.js";
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function eliminarArchivoSubido(filePath) {
   if (filePath && fs.existsSync(filePath)) {
@@ -185,24 +189,30 @@ const editarTitulada = async (req, res) => {
 const eliminarTitulada = async (req, res) => {
   const { id } = req.params;
 
-  const titulada = await Titulada.findById(id);
-
-  if (!titulada) {
-    const error = new Error("Titulada no existente");
-    return res.status(404).json({ msg: error.message });
-  }
-
   try {
-    if (
-      fs.existsSync(`./uploads/disenosCurriculares${titulada.archivoAdjunto}`)
-    ) {
-      fs.unlinkSync(`./uploads/disenosCurriculares${titulada.archivoAdjunto}`);
+    const titulada = await Titulada.findById(id);
+
+    if (!titulada) {
+      const error = new Error("Titulada no existente");
+      return res.status(404).json({ msg: error.message });
     }
 
+    // Construye la ruta del archivo de manera segura
+    const archivoPath = path.join(__dirname, '..', 'uploads', 'disenosCurriculares', titulada.archivoAdjunto);
+
+    // Verifica si el archivo existe y luego intenta eliminarlo
+    if (fs.existsSync(archivoPath)) {
+      fs.unlinkSync(archivoPath);
+    } else {
+      console.log("El archivo no existe, pero el registro será eliminado de todos modos.");
+    }
+
+    // Elimina el registro de la base de datos
     await titulada.deleteOne();
     res.json({ msg: "Titulada Eliminada Correctamente" });
   } catch (error) {
-    console.log(error);
+    console.error("Error al eliminar titulada:", error);
+    res.status(500).json({ msg: "Error al eliminar titulada" });
   }
 };
 
