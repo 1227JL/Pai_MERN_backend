@@ -11,7 +11,7 @@ const tituladaSchema = mongoose.Schema(
             type: Number,
             required: true,
         },
-        tipo: {
+        titulo: {
             type: String,
             required: true,
             enum: ['Tecnologo', 'Técnico', 'Curso Corto']
@@ -47,7 +47,11 @@ const tituladaSchema = mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Ambiente'
         },
-        duracion: {
+        duracion_etapa_lectiva: {
+            type: Number,
+            required: true
+        },
+        duracion_etapa_productiva: {
             type: Number,
             required: true
         },
