@@ -6,6 +6,7 @@ import {
   obtenerTitulada,
   editarTitulada,
   eliminarTitulada,
+  obtenerCompetencia
 } from "../controllers/tituladaController.js";
 import checkAuth from "../middleware/checkAuth.js";
 
@@ -34,5 +35,7 @@ router
   .get(checkAuth, obtenerTitulada)
   .put(checkAuth, upload.single("file"), editarTitulada)
   .delete(checkAuth, eliminarTitulada);
+
+router.get('/:id/:competencia', obtenerCompetencia)
 
 export default router;
