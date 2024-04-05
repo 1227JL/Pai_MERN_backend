@@ -119,7 +119,7 @@ const obtenerTitulada = async (req, res) => {
         select: "nombre email", // Los campos que desees obtener del creador del aprendiz
       },
     })
-    .select("-__v");
+    .select("-__v -competencias.resultados_aprendizaje");
 
   if (!titulada) {
     const error = new Error("Titulada no econtrada");
@@ -216,10 +216,35 @@ const eliminarTitulada = async (req, res) => {
   }
 };
 
+const obtenerCompetencia = async (req, res) => {
+  const { id, competencia } = req.params
+
+  try {
+    const titulada = await Titulada.findById(id)
+      .select("competencias")
+  
+      const competenciaFiltrada = titulada.competencias.filter(competenciaState => competenciaState._id == competencia)
+      if(!titulada){
+        throw new Error('Titulada no existente')
+      }
+      if(!competenciaFiltrada){
+        throw new Error('Competencia no existente')
+      }
+
+      res.json(competenciaFiltrada[0].resultados_aprendizaje)
+  } catch (error) {
+    console.log(error)
+    return res
+    .status(500)
+    .json({ msg: error.message || "Hubo un error al procesar la solicitud" });
+  }
+}
+
 export {
   crearTitulada,
   obtenerTituladas,
   obtenerTitulada,
   editarTitulada,
   eliminarTitulada,
+  obtenerCompetencia
 };
