@@ -146,7 +146,7 @@ def extract_information_titulada(content):
     return extracted_info
 
 def main():
-    pdf_path = 'test/Diseno_curricular.pdf' # Asegúrate de que el script se llama con un argumento de ruta de archivo
+    pdf_path = sys.argv[1] # Asegúrate de que el script se llama con un argumento de ruta de archivo
     
     end_phrase_section1 = "2.1 PERFIL OCUPACIONAL"
     

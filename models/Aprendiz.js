@@ -19,13 +19,11 @@ const aprendizSchema = mongoose.Schema(
         },
         documento: {
             type: Number,
-            required: true,
             trim: true
         },
         tipoDocumento: {
             type: String,
-            required: true,
-            enum: ['Cédula de Ciudadania', 'Tarjeta de Identidad', 'Cédula de Extranjeria']
+            enum: ['Cédula de Ciudadania', 'Tarjeta de Identidad', 'Cédula de Extranjeria'],
         },
         documentoAdjunto: {
             type: String, // Puede ser una URL o un identificador de archivo
@@ -33,7 +31,7 @@ const aprendizSchema = mongoose.Schema(
         estado: {
             type: String,
             required: true,
-            enum: ['Convocatoria', 'Etapa Lectiva', 'Etapa Productiva', 'Formación Finalizada', ,'Decersión'],
+            enum: ['Matriculado', 'Etapa Lectiva', 'Etapa Productiva', 'Formación Finalizada', 'Decersión'],
         },
         creador: {
             type: mongoose.Schema.Types.ObjectId,

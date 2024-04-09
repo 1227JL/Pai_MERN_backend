@@ -39,7 +39,7 @@ const crearTitulada = async (req, res) => {
 
     let contenidoExtraidoDelPDF = ""; // Aquí almacenaremos el contenido extraído del PDF
 
-    const pythonProcess = spawn("python", ["test/pdfreader.py", req.file.path]);
+    const pythonProcess = spawn("python", ["scripts/pdfreaderTitulada.py", req.file.path]);
 
     pythonProcess.stdout.on("data", (data) => {
       contenidoExtraidoDelPDF += data.toString();
