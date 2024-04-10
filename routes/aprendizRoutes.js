@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 router
-  .route("/:ficha")
+  .route("/:id")
   .post(checkAuth, upload.single("file"), registrarAprendiz);
 
 export default router;

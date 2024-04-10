@@ -24,6 +24,15 @@ const aprendizSchema = mongoose.Schema(
         tipoDocumento: {
             type: String,
             enum: ['Cédula de Ciudadania', 'Tarjeta de Identidad', 'Cédula de Extranjeria'],
+            default: 'Cédula de Ciudadania'
+        },
+        nacimiento: {
+            type: Date,
+            required: true
+        },
+        rh: {
+            type: String,
+            required: true  
         },
         documentoAdjunto: {
             type: String, // Puede ser una URL o un identificador de archivo

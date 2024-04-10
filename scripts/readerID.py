@@ -78,10 +78,10 @@ def formated_information(text):
     blood_type = blood_type_match.group(1).strip() if blood_type_match else None
 
     person_info = {
-        "Nombre": full_name,
-        "ID": id_number,
-        "Nacimiento": birth_date,
-        "RH": blood_type
+        "nombre": full_name,
+        "documento": id_number,
+        "nacimiento": birth_date,
+        "rh": blood_type
     }
     json_info = json.dumps(person_info, ensure_ascii=False)
     print(json_info)
@@ -89,6 +89,5 @@ def formated_information(text):
 # Replace 'your_pdf_file.pdf' with your actual PDF file path
 pdf_path = 'test/Cedula_de_ciudadanía.pdf'
 extracted_text = extract_text_from_pdf(pdf_path)
-print(extracted_text)
 user_information = formated_information(extracted_text)
 
