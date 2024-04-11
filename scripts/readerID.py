@@ -4,6 +4,7 @@ from PIL import Image
 import io
 import re
 import json
+import sys
 from datetime import datetime
 
 
@@ -87,7 +88,7 @@ def formated_information(text):
     print(json_info)
 
 # Replace 'your_pdf_file.pdf' with your actual PDF file path
-pdf_path = 'test/Cedula_de_ciudadanía.pdf'
+pdf_path = sys.argv[1]
 extracted_text = extract_text_from_pdf(pdf_path)
 user_information = formated_information(extracted_text)
 

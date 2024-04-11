@@ -11,12 +11,12 @@ function eliminarArchivoSubido(filePath) {
 
 const registrarAprendiz = async (req, res) => {
   const { id } = req.params;
-  const { nombre, documento, correo, telefono } = req.body;
+  const { correo, telefono } = req.body;
   // Verificar si nombre, documento, correo o telefono ya existen en la base de datos
 
   try {
     const existeAprendiz = await Aprendiz.findOne({
-      $or: [{ nombre }, { documento }, { correo }, { telefono }],
+      $or: [{ correo }, { telefono }],
     });
 
     const tituladaExiste = await Titulada.findById(id).select("estado aprendices");
@@ -78,6 +78,7 @@ const registrarAprendiz = async (req, res) => {
           ? "Matriculado"
           : tituladaExiste.estado,
       documentoAdjunto: req.file.filename,
+      creador: req.usuario._id
     });
 
     await nuevoAprendiz.save();
@@ -93,4 +94,22 @@ const registrarAprendiz = async (req, res) => {
   }
 };
 
-export { registrarAprendiz };
+const eliminarAprendiz = async (req, res) => {
+  try {
+    const aprendiz = await Aprendiz.findById(req.params.id);
+
+    if (!aprendiz){
+      throw new Error('Aprendiz no existente')
+    }
+
+    await aprendiz.deleteOne()
+    res.json({ msg: "Aprendiz Eliminado Correctamente" });
+  } catch (error) {
+    console.error(error.message);
+    return res
+      .status(500)
+      .json({ msg: error.message || "Hubo un error al procesar la solicitud" });
+  }
+}
+
+export { registrarAprendiz, eliminarAprendiz };
