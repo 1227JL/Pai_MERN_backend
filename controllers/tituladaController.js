@@ -197,6 +197,9 @@ const eliminarTitulada = async (req, res) => {
       return res.status(404).json({ msg: error.message });
     }
 
+    // Elimina todos los aprendices asociados a la titulada
+    await Aprendiz.deleteMany({ tituladaId: id });
+
     // Construye la ruta del archivo de manera segura
     const archivoPath = path.join(__dirname, '..', 'uploads', 'disenosCurriculares', titulada.archivoAdjunto);
 
@@ -209,12 +212,13 @@ const eliminarTitulada = async (req, res) => {
 
     // Elimina el registro de la base de datos
     await titulada.deleteOne();
-    res.json({ msg: "Titulada Eliminada Correctamente" });
+    res.json({ msg: "Titulada eliminada correctamente" });
   } catch (error) {
     console.error("Error al eliminar titulada:", error);
     res.status(500).json({ msg: "Error al eliminar titulada" });
   }
 };
+
 
 const obtenerCompetencia = async (req, res) => {
   const { id, competencia } = req.params

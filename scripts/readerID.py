@@ -61,7 +61,7 @@ def formated_information(text):
     id_regex = r"NUIP ([\d\.]+)"
     birth_date_regex = r"Fecha de nacimiento.*\n\n([\d\w\s]+)"
     blood_type_regex = r"([\w\+\-]+)\n>"
-
+    
     id_match = re.search(id_regex, text)
     birth_date_match = re.search(birth_date_regex, text)
     blood_type_match = re.search(blood_type_regex, text)
