@@ -7,6 +7,7 @@ import tituladaRoutes from "./routes/tituladaRoutes.js";
 import instructorRoutes from "./routes/instructorRoutes.js";
 import ambienteRoutes from "./routes/ambienteRoutes.js";
 import aprendizRoutes from "./routes/aprendizRoutes.js";
+import ingresoRoutes from "./routes/ingresoRoutes.js";
 
 const app = express();
 app.use(express.json());
@@ -34,6 +35,7 @@ app.use("/api/tituladas", tituladaRoutes);
 app.use("/api/instructores", instructorRoutes);
 app.use("/api/ambientes", ambienteRoutes);
 app.use("/api/aprendices", aprendizRoutes);
+app.use("/api/ingresos", ingresoRoutes);
 app.use("/uploads", express.static("uploads"));
 app.use((err, req, res, next) => {
   console.error(err);

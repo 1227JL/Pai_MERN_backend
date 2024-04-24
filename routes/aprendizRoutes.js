@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { eliminarAprendiz, registrarAprendiz } from "../controllers/aprendizController.js";
+import { eliminarAprendiz, obtenerAprendiz, registrarAprendiz } from "../controllers/aprendizController.js";
 import checkAuth from "../middleware/checkAuth.js";
 
 const router = express.Router();
@@ -20,6 +20,7 @@ const upload = multer({ storage });
 
 router
   .route("/:id")
+  .get(checkAuth, obtenerAprendiz)
   .post(checkAuth, upload.single("file"), registrarAprendiz)
   .delete(checkAuth, eliminarAprendiz)
 

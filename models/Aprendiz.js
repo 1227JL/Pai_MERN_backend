@@ -41,6 +41,10 @@ const aprendizSchema = mongoose.Schema({
         required: true,
         enum: ['Matriculado', 'Etapa Lectiva', 'Etapa Productiva', 'Formación Finalizada', 'Decersión'],
     },
+    imagen: {
+        type: String,
+        default: ''
+    },
     creador: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Usuario',

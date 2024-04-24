@@ -3,8 +3,8 @@ import Instructor from "../models/Instructor.js";
 import Titulada from "../models/Titulada.js";
 import fs from "fs";
 import capitalize from "../helpers/capitalize.js";
-import path, { dirname } from 'path';
-import { fileURLToPath } from 'url';
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -39,7 +39,10 @@ const crearTitulada = async (req, res) => {
 
     let contenidoExtraidoDelPDF = ""; // Aquí almacenaremos el contenido extraído del PDF
 
-    const pythonProcess = spawn("python", ["scripts/pdfreaderTitulada.py", req.file.path]);
+    const pythonProcess = spawn("python", [
+      "scripts/pdfreaderTitulada.py",
+      req.file.path,
+    ]);
 
     pythonProcess.stdout.on("data", (data) => {
       contenidoExtraidoDelPDF += data.toString();
@@ -73,8 +76,8 @@ const crearTitulada = async (req, res) => {
       competencias: objetoExtraido.competencias,
       duracion_etapa_lectiva:
         objetoExtraido.titulada_info.duracion_etapa_lectiva,
-        duracion_etapa_productiva:
-        objetoExtraido.titulada_info.duracion_etapa_productiva
+      duracion_etapa_productiva:
+        objetoExtraido.titulada_info.duracion_etapa_productiva,
     });
     const tituladaAlmacenada = await titulada.save();
     const tituladaPopulada = await Titulada.findById(tituladaAlmacenada._id)
@@ -111,13 +114,9 @@ const obtenerTitulada = async (req, res) => {
     })
     .populate("instructores", "nombre email")
     .populate("ambiente", "bloque numero")
-    .populate("aprendices")
     .populate({
       path: "aprendices",
-      populate: {
-        path: "creador",
-        select: "nombre email", // Los campos que desees obtener del creador del aprendiz
-      },
+      select: "nombre email estado documento", // Solo incluye estos campos
     })
     .select("-__v -competencias.resultados_aprendizaje");
 
@@ -201,13 +200,21 @@ const eliminarTitulada = async (req, res) => {
     await Aprendiz.deleteMany({ tituladaId: id });
 
     // Construye la ruta del archivo de manera segura
-    const archivoPath = path.join(__dirname, '..', 'uploads', 'disenosCurriculares', titulada.archivoAdjunto);
+    const archivoPath = path.join(
+      __dirname,
+      "..",
+      "uploads",
+      "disenosCurriculares",
+      titulada.archivoAdjunto
+    );
 
     // Verifica si el archivo existe y luego intenta eliminarlo
     if (fs.existsSync(archivoPath)) {
       fs.unlinkSync(archivoPath);
     } else {
-      console.log("El archivo no existe, pero el registro será eliminado de todos modos.");
+      console.log(
+        "El archivo no existe, pero el registro será eliminado de todos modos."
+      );
     }
 
     // Elimina el registro de la base de datos
@@ -219,30 +226,30 @@ const eliminarTitulada = async (req, res) => {
   }
 };
 
-
 const obtenerCompetencia = async (req, res) => {
-  const { id, competencia } = req.params
+  const { id, competencia } = req.params;
 
   try {
-    const titulada = await Titulada.findById(id)
-      .select("competencias")
-  
-      const competenciaFiltrada = titulada.competencias.filter(competenciaState => competenciaState._id == competencia)
-      if(!titulada){
-        throw new Error('Titulada no existente')
-      }
-      if(!competenciaFiltrada){
-        throw new Error('Competencia no existente')
-      }
+    const titulada = await Titulada.findById(id).select("competencias");
 
-      res.json(competenciaFiltrada[0].resultados_aprendizaje)
+    const competenciaFiltrada = titulada.competencias.filter(
+      (competenciaState) => competenciaState._id == competencia
+    );
+    if (!titulada) {
+      throw new Error("Titulada no existente");
+    }
+    if (!competenciaFiltrada) {
+      throw new Error("Competencia no existente");
+    }
+
+    res.json(competenciaFiltrada[0]);
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return res
-    .status(500)
-    .json({ msg: error.message || "Hubo un error al procesar la solicitud" });
+      .status(500)
+      .json({ msg: error.message || "Hubo un error al procesar la solicitud" });
   }
-}
+};
 
 export {
   crearTitulada,
@@ -250,5 +257,5 @@ export {
   obtenerTitulada,
   editarTitulada,
   eliminarTitulada,
-  obtenerCompetencia
+  obtenerCompetencia,
 };
