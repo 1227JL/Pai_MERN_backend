@@ -71,7 +71,7 @@ const crearTitulada = async (req, res) => {
       programa: objetoExtraido.titulada_info.programa,
       titulo: tituloCapitalize,
       creador: req.usuario.id,
-      instructores: [instructor._id],
+      instructores: [{instructor: instructor._id, aCargo: true}],
       archivoAdjunto: req.file.filename,
       competencias: objetoExtraido.competencias,
       duracion_etapa_lectiva:
@@ -83,7 +83,7 @@ const crearTitulada = async (req, res) => {
     const tituladaPopulada = await Titulada.findById(tituladaAlmacenada._id)
       .populate({ path: "ambiente", select: "bloque numero" })
       .select(
-        "-__v -archivoAdjunto -createdAt -updatedAt -aprendices -instructores -duracion -creador"
+        "-__v -archivoAdjunto -createdAt -updatedAt -aprendices -instructores -duracion -creador -competencias -duracion_etapa_lectiva -duracion_etapa_productiva"
       );
 
     res.json(tituladaPopulada);

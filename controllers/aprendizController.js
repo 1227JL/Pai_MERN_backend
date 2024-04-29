@@ -2,6 +2,8 @@ import Aprendiz from "../models/Aprendiz.js";
 import Titulada from "../models/Titulada.js";
 import fs from "fs";
 import { spawn } from "child_process";
+import mongoose from 'mongoose';
+import { asociarTituladaAAprendiz } from "../services/aprendizService.js";
 
 function eliminarArchivoSubido(filePath) {
   if (filePath && fs.existsSync(filePath)) {
@@ -132,4 +134,37 @@ const eliminarAprendiz = async (req, res) => {
   }
 }
 
-export { registrarAprendiz, obtenerAprendiz, eliminarAprendiz };
+const agregarTituladaAAprendiz = async (req, res) => {
+  try {
+    const { idAprendiz, idTitulada } = req.params; // Suponiendo que pasas estos parámetros en la URL
+    const aprendizActualizado = await asociarTituladaAAprendiz(idAprendiz, idTitulada);
+    res.status(200).json(aprendizActualizado);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const obtenerTituladasAprendiz = async (req, res) => {
+  try {
+    const { id } = req.params; // Asegúrate de que 'id' se obtiene correctamente de los parámetros de la URL
+
+    // Encuentra el aprendiz por ID y pobla el array de 'tituladas'
+    const aprendiz = await Aprendiz.findById(id)
+      .select('tituladas -_id') // Selecciona solo el campo 'tituladas' y excluye '_id'
+      .populate({
+        path: 'tituladas', // Especifica el path que quieres poblar
+        select: 'programa ficha titulo jornada estado modalidad instructores ambiente', // Campos específicos para incluir en la población
+      });
+
+    if (!aprendiz) {
+      return res.status(404).json({ message: "Aprendiz no encontrado" });
+    }
+
+    res.json(aprendiz.tituladas); // Devuelve solo las tituladas asociadas
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error del servidor" });
+  }
+};
+
+export { registrarAprendiz, obtenerAprendiz, eliminarAprendiz, agregarTituladaAAprendiz, obtenerTituladasAprendiz };
