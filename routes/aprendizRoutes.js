@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { eliminarAprendiz, obtenerAprendiz, registrarAprendiz } from "../controllers/aprendizController.js";
+import { agregarTituladaAAprendiz, eliminarAprendiz, obtenerAprendiz, obtenerTituladasAprendiz, registrarAprendiz } from "../controllers/aprendizController.js";
 import checkAuth from "../middleware/checkAuth.js";
 
 const router = express.Router();
@@ -23,5 +23,9 @@ router
   .get(checkAuth, obtenerAprendiz)
   .post(checkAuth, upload.single("file"), registrarAprendiz)
   .delete(checkAuth, eliminarAprendiz)
+
+router.get('/:id/tituladas', obtenerTituladasAprendiz)
+router.post('/:idAprendiz/tituladas/:idTitulada', agregarTituladaAAprendiz);
+
 
 export default router;

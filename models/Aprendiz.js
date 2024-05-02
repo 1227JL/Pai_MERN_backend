@@ -49,11 +49,21 @@ const aprendizSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Usuario',
     },
-    tituladaId: {  // Vinculación con la titulada
+    tituladas: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Titulada'
-    }
+      }],
 }, { timestamps: true });
+
+const asociarTituladaAAprendiz = async (idAprendiz, idTitulada) => {
+    const aprendiz = await Aprendiz.findById(idAprendiz);
+    if (!aprendiz) throw new Error('Aprendiz no encontrado');
+  
+    if (!aprendiz.tituladas.includes(idTitulada)) {
+      aprendiz.tituladas.push(idTitulada);
+      await aprendiz.save();
+    }
+  };
 
 const Aprendiz = mongoose.model('Aprendiz', aprendizSchema);
 

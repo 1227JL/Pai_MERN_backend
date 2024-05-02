@@ -6,16 +6,16 @@ import {
   obtenerTitulada,
   editarTitulada,
   eliminarTitulada,
-  obtenerCompetencia
+  obtenerCompetencia,
 } from "../controllers/tituladaController.js";
 import checkAuth from "../middleware/checkAuth.js";
+import { Storage } from '@google-cloud/storage'
+
+const cloudStorage = new Storage();
 
 const router = express.Router();
 
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "./uploads/disenosCurriculares");
-  },
   filename: function (req, file, cb) {
     const ext = file.originalname.split(".").pop(); // Obtiene la extensión del archivo original
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -28,7 +28,11 @@ const upload = multer({ storage });
 router
   .route("/")
   .get(checkAuth, obtenerTituladas)
-  .post(checkAuth, upload.single("file"), crearTitulada);
+  .post(
+    checkAuth,
+    upload.single("file"),
+    crearTitulada
+  );
 
 router
   .route("/:id")
@@ -36,6 +40,6 @@ router
   .put(checkAuth, upload.single("file"), editarTitulada)
   .delete(checkAuth, eliminarTitulada);
 
-router.get('/:id/:competencia', obtenerCompetencia)
+router.get("/:id/:competencia", obtenerCompetencia);
 
 export default router;

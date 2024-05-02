@@ -33,8 +33,14 @@ const tituladaSchema = mongoose.Schema(
         },
         instructores: [
             {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Instructor',
+                instructor: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'Instructor'
+                },
+                aCargo: {
+                    type: Boolean,
+                    default: false
+                }
             }
         ],
         aprendices: [
