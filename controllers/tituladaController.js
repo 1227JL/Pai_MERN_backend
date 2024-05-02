@@ -9,8 +9,6 @@ import sanitizeString from "../helpers/sanitazeString.js";
 import { uploadFile } from "../config/google_cloud.js";
 import {Storage} from '@google-cloud/storage'
 
-const cloudStorage = new Storage();
-
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const crearTitulada = async (req, res) => {
