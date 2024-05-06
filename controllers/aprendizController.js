@@ -1,70 +1,193 @@
-import Aprendiz from '../models/Aprendiz.js';
-import multer from "multer"; 
-import Titulada from '../models/Titulada.js';
-import fs from 'fs'
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, './uploads/documentosAprendices'); // Directorio de destino para los archivos subidos
-  },
-  filename: (req, file, cb) => {
-    const ext = file.originalname.split('.').pop(); // Obtiene la extensión del archivo original
-    cb(null, `${Date.now()}.${ext}`); // Asigna un nombre único al archivo
-  },
-});
-
-const upload = multer({ storage }).single('documentoAdjunto'); // 'file' debe coincidir con el nombre del campo en el formulario
+import Aprendiz from "../models/Aprendiz.js";
+import Titulada from "../models/Titulada.js";
+import { spawn } from "child_process";
+import { asociarTituladaAAprendiz } from "../services/aprendizService.js";
+import { uploadFile } from "../config/google_cloud.js";
+import sanitizeString from "../helpers/sanitazeString.js";
 
 const registrarAprendiz = async (req, res) => {
-    upload(req, res, async (err)=>{
-        if(err){
-          console.error(err);
-          return res.status(500).send('Hubo un error al cargar el archivo');
+  const { id } = req.params;
+  const { email, telefono } = req.body;
+  // Verificar si nombre, documento, correo o telefono ya existen en la base de datos
+
+  try {
+    const existeAprendiz = await Aprendiz.findOne({
+      $or: [{ email }, { telefono }],
+    });
+
+    const tituladaExiste = await Titulada.findById(id).select(
+      "estado aprendices"
+    );
+
+    if (existeAprendiz) {
+      const error = new Error(`Aprendiz Existente`);
+      return res.status(400).json({ msg: error.message });
+    }
+
+    if (!tituladaExiste) {
+      return res.status(404).json({ msg: "Titulada no existente" });
+    }
+
+    let contenidoExtraidoDelPDF = ""; // Aquí almacenaremos el contenido extraído del PDF
+
+    const pythonProcess = spawn("python", [
+      "scripts/readerID.py",
+      req.file.path,
+    ]);
+
+    pythonProcess.stdout.on("data", (data) => {
+      contenidoExtraidoDelPDF += data.toString();
+    });
+
+    pythonProcess.stderr.on("data", (data) => {
+      console.error(`stderr: ${data}`);
+    });
+
+    await new Promise((resolve, reject) => {
+      pythonProcess.on("close", (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error("Error al procesar el archivo PDF"));
         }
+      });
+    });
 
-        const { nombre, documento, correo, telefono } = req.body;
+    const objetoExtraido = JSON.parse(contenidoExtraidoDelPDF);
 
-        // Verificar si nombre, documento, correo o telefono ya existen en la base de datos
-        const existeAprendiz = await Aprendiz.findOne({
-          $or: [
-            { nombre },
-            { documento },
-            { correo },
-            { telefono }
-          ]
-        });
-
-        if (existeAprendiz) {
-          if (req.file) {
-            fs.unlinkSync(req.file.path);
-          }
-          const error = new Error(`Aprendiz Existente`);
-          return res.status(400).json({ msg: error.message });
-        }
+    const dateString = objetoExtraido.nacimiento;
+    const dateParts = dateString.split("/");
+      
+    // Cambia el orden de DD/MM/YYYY a YYYY-MM-DD
+    const nacimiento = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
     
-        try {
-            const { titulada } = req.body
+    const nuevoAprendiz = new Aprendiz({
+      ...req.body,
+      nombre: objetoExtraido.nombre,
+      documento: objetoExtraido.documento,
+      nacimiento: nacimiento,
+      rh: objetoExtraido.rh,
+      estado:
+      tituladaExiste.estado == "Convocatoria"
+      ? "Matriculado"
+      : tituladaExiste.estado,
+      documentoAdjunto: req.file.filename,
+      creador: req.usuario._id,
+    });
 
-            const tituladaExiste = await Titulada.findById(titulada)
+    const destinationBlobName = `aprendices/${sanitizeString(objetoExtraido.nombre)}_${objetoExtraido.documento}/${req.file.filename}`;
 
-            if(!tituladaExiste){
-              return res.status(404).json({msg: 'Titulada no existente'})
+    await nuevoAprendiz.save();
+
+    try {
+      await uploadFile(req.file.path, destinationBlobName);
+    } catch (error) {
+      console.error("Error subiendo el archivo:", error);
+      res.status(500).send("Error al subir el archivo");
+    }
+    tituladaExiste.aprendices.push(nuevoAprendiz);
+    tituladaExiste.save();
+    res.json(nuevoAprendiz);
+  } catch (error) {
+    console.error(error.message);
+    return res
+      .status(500)
+      .json({ msg: error.message || "Hubo un error al procesar la solicitud" });
+  }
+};
+
+const obtenerAprendiz = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const aprendiz = await Aprendiz.findOne({ documento: id }).select("-_v");
+
+    if (!aprendiz) {
+      throw new Error("Aprendiz no existente");
+    }
+
+    res.json(aprendiz);
+  } catch (error) {
+    console.error(error.message);
+    return res
+      .status(500)
+      .json({ msg: error.message || "Hubo un error al procesar la solicitud" });
+  }
+};
+
+const eliminarAprendiz = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const aprendiz = await Aprendiz.findById(id);
+
+    if (!aprendiz) {
+      throw new Error("Aprendiz no existente");
+    }
+
+    await aprendiz.deleteOne();
+    res.json({ msg: "Aprendiz Eliminado Correctamente" });
+  } catch (error) {
+    console.error(error.message);
+    return res
+      .status(500)
+      .json({ msg: error.message || "Hubo un error al procesar la solicitud" });
+  }
+};
+
+const agregarTituladaAAprendiz = async (req, res) => {
+  try {
+    const { idAprendiz, idTitulada } = req.params; // Suponiendo que pasas estos parámetros en la URL
+    const aprendizActualizado = await asociarTituladaAAprendiz(
+      idAprendiz,
+      idTitulada
+    );
+    res.status(200).json(aprendizActualizado);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const obtenerTituladasAprendiz = async (req, res) => {
+  try {
+    const { id } = req.params; // Asegúrate de que 'id' se obtiene correctamente de los parámetros de la URL
+
+    // Encuentra el aprendiz por ID y pobla el array de 'tituladas'
+    const aprendiz = await Aprendiz.findById(id)
+      .select("tituladas -_id") // Selecciona solo el campo 'tituladas' y excluye '_id'
+      .populate({
+        path: "tituladas", // Especifica el path que quieres poblar
+        select:
+          "programa ficha titulo jornada estado modalidad instructores ambiente", // Campos específicos para incluir en la población
+        populate: [
+          {
+            path: "instructores", // Poblar los instructores dentro de tituladas
+            match: { aCargo: true }, // Solo incluye instructores donde aCargo es true
+            populate: {
+              path: 'instructor',
+              select: 'nombre'
             }
+          },
+          {
+            path: "ambiente", // Poblar los instructores dentro de tituladas
+            select: 'bloque numero'
+          }
+        ]
+      });
 
-            const aprendizAlmacenado = await Aprendiz(req.body)
-            aprendizAlmacenado.estado = tituladaExiste.estado
-            aprendizAlmacenado.documentoAdjunto = req.file.filename
-            await aprendizAlmacenado.save()
-            tituladaExiste.aprendices.push(aprendizAlmacenado)
-            tituladaExiste.save()
-            res.json(aprendizAlmacenado)
-        } catch (error) {
-            console.log(error)
-            res.status(500).send('Hubo un error al guardar el Aprendiz');
-        }
-    })
-}
+    if (!aprendiz) {
+      return res.status(404).json({ message: "Aprendiz no encontrado" });
+    }
+
+    res.json(aprendiz.tituladas); // Devuelve solo las tituladas asociadas
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error del servidor" });
+  }
+};
 
 export {
-    registrarAprendiz
-}
+  registrarAprendiz,
+  obtenerAprendiz,
+  eliminarAprendiz,
+  agregarTituladaAAprendiz,
+  obtenerTituladasAprendiz,
+};

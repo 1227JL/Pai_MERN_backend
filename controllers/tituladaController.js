@@ -3,27 +3,22 @@ import Instructor from "../models/Instructor.js";
 import Titulada from "../models/Titulada.js";
 import fs from "fs";
 import capitalize from "../helpers/capitalize.js";
-import path, { dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-function eliminarArchivoSubido(filePath) {
-  if (filePath && fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
-  }
-}
+import sanitizeString from "../helpers/sanitazeString.js";
+import { deleteDirectory, uploadFile } from "../config/google_cloud.js";
+import Aprendiz from "../models/Aprendiz.js";
 
 const crearTitulada = async (req, res) => {
   try {
-    const { ficha, ambiente, jornada } = req.body;
-    const existeTitulada = await Titulada.findOne({ ficha });
+    // Sanear los valores de programa y ficha
+    const { ambiente, jornada } = req.body;
+    const fichaSanitizada = sanitizeString(req.body.ficha);
+    const existeTitulada = await Titulada.findOne({ ficha: fichaSanitizada });
     const ambienteNoDisponible = await Titulada.findOne({ ambiente, jornada });
     const instructor = await Instructor.findById(req.body.instructor);
 
     if (existeTitulada) {
       throw new Error(
-        `La ficha ${ficha} ya se encuentra asociada a una titulada`
+        `La ficha ${fichaSanitizada} ya se encuentra asociada a una titulada`
       );
     }
 
@@ -37,9 +32,11 @@ const crearTitulada = async (req, res) => {
       );
     }
 
-    let contenidoExtraidoDelPDF = ""; // Aquí almacenaremos el contenido extraído del PDF
-
-    const pythonProcess = spawn("python", ["test/pdfreader.py", req.file.path]);
+    let contenidoExtraidoDelPDF = "";
+    const pythonProcess = spawn("python", [
+      "scripts/pdfreaderTitulada.py",
+      req.file.path,
+    ]);
 
     pythonProcess.stdout.on("data", (data) => {
       contenidoExtraidoDelPDF += data.toString();
@@ -60,36 +57,47 @@ const crearTitulada = async (req, res) => {
     });
 
     const objetoExtraido = JSON.parse(contenidoExtraidoDelPDF);
-
-    // Si llegamos aquí, el proceso fue exitoso, entonces procedemos con el guardado en la base de datos
     const tituloCapitalize = capitalize(objetoExtraido.titulada_info.titulo);
+    const programaSanitizado = sanitizeString(
+      objetoExtraido.titulada_info.programa
+    );
+    const destinationBlobName = `tituladas/${programaSanitizado}_${fichaSanitizada}/${req.file.filename}`;
+
     const titulada = new Titulada({
       ...req.body,
+      ficha: fichaSanitizada,
       programa: objetoExtraido.titulada_info.programa,
       titulo: tituloCapitalize,
       creador: req.usuario.id,
-      instructores: [instructor._id],
+      instructores: [{ instructor: instructor._id, aCargo: true }],
       archivoAdjunto: req.file.filename,
       competencias: objetoExtraido.competencias,
       duracion_etapa_lectiva:
         objetoExtraido.titulada_info.duracion_etapa_lectiva,
-        duracion_etapa_productiva:
-        objetoExtraido.titulada_info.duracion_etapa_productiva
+      duracion_etapa_productiva:
+        objetoExtraido.titulada_info.duracion_etapa_productiva,
     });
-    const tituladaAlmacenada = await titulada.save();
-    const tituladaPopulada = await Titulada.findById(tituladaAlmacenada._id)
+
+    await titulada.save();
+
+    // Subir el archivo al bucket de GCS con la nueva estructura de directorio sanitizada
+    try {
+      await uploadFile(req.file.path, destinationBlobName);
+    } catch (error) {
+      console.error("Error subiendo el archivo:", error);
+      res.status(500).send("Error al subir el archivo");
+    }
+
+    const tituladaAlmacenada = await Titulada.findById(titulada._id)
       .populate({ path: "ambiente", select: "bloque numero" })
       .select(
-        "-__v -archivoAdjunto -createdAt -updatedAt -aprendices -instructores -duracion -creador"
+        "-__v -archivoAdjunto -createdAt -updatedAt -aprendices -instructores -duracion -creador -competencias -duracion_etapa_lectiva -duracion_etapa_productiva"
       );
 
-    res.json(tituladaPopulada);
+    res.json(tituladaAlmacenada);
   } catch (error) {
     console.error(error.message);
-    eliminarArchivoSubido(req.file?.path); // Eliminar el archivo subido solo en caso de error
-    return res
-      .status(500)
-      .json({ msg: error.message || "Hubo un error al procesar la solicitud" });
+    return res.status(500).json({ msg: error.message });
   }
 };
 
@@ -109,15 +117,11 @@ const obtenerTitulada = async (req, res) => {
       path: "creador",
       select: "nombre email",
     })
-    .populate("instructores", "nombre email")
+    .populate("instructores.instructor", "nombre email")
     .populate("ambiente", "bloque numero")
-    .populate("aprendices")
     .populate({
       path: "aprendices",
-      populate: {
-        path: "creador",
-        select: "nombre email", // Los campos que desees obtener del creador del aprendiz
-      },
+      select: "nombre email estado documento", // Solo incluye estos campos
     })
     .select("-__v -competencias.resultados_aprendizaje");
 
@@ -197,19 +201,20 @@ const eliminarTitulada = async (req, res) => {
       return res.status(404).json({ msg: error.message });
     }
 
-    // Construye la ruta del archivo de manera segura
-    const archivoPath = path.join(__dirname, '..', 'uploads', 'disenosCurriculares', titulada.archivoAdjunto);
+    // Formato del nombre del directorio basado en la titulada
+    const directoryName = `tituladas/${titulada.programa
+      .toLowerCase()
+      .replace(/\s+/g, "-")}_${titulada.ficha}`;
 
-    // Verifica si el archivo existe y luego intenta eliminarlo
-    if (fs.existsSync(archivoPath)) {
-      fs.unlinkSync(archivoPath);
-    } else {
-      console.log("El archivo no existe, pero el registro será eliminado de todos modos.");
-    }
+    // Elimina el directorio y todos sus contenidos en Google Cloud Storage
+    await deleteDirectory(directoryName);
+
+    // Elimina todos los aprendices asociados a la titulada
+    await Aprendiz.deleteMany({ tituladaId: id });
 
     // Elimina el registro de la base de datos
     await titulada.deleteOne();
-    res.json({ msg: "Titulada Eliminada Correctamente" });
+    res.json({ msg: "Titulada eliminada correctamente" });
   } catch (error) {
     console.error("Error al eliminar titulada:", error);
     res.status(500).json({ msg: "Error al eliminar titulada" });
@@ -217,28 +222,29 @@ const eliminarTitulada = async (req, res) => {
 };
 
 const obtenerCompetencia = async (req, res) => {
-  const { id, competencia } = req.params
+  const { id, competencia } = req.params;
 
   try {
-    const titulada = await Titulada.findById(id)
-      .select("competencias")
-  
-      const competenciaFiltrada = titulada.competencias.filter(competenciaState => competenciaState._id == competencia)
-      if(!titulada){
-        throw new Error('Titulada no existente')
-      }
-      if(!competenciaFiltrada){
-        throw new Error('Competencia no existente')
-      }
+    const titulada = await Titulada.findById(id).select("competencias");
 
-      res.json(competenciaFiltrada[0].resultados_aprendizaje)
+    const competenciaFiltrada = titulada.competencias.filter(
+      (competenciaState) => competenciaState._id == competencia
+    );
+    if (!titulada) {
+      throw new Error("Titulada no existente");
+    }
+    if (!competenciaFiltrada) {
+      throw new Error("Competencia no existente");
+    }
+
+    res.json(competenciaFiltrada[0]);
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return res
-    .status(500)
-    .json({ msg: error.message || "Hubo un error al procesar la solicitud" });
+      .status(500)
+      .json({ msg: error.message || "Hubo un error al procesar la solicitud" });
   }
-}
+};
 
 export {
   crearTitulada,
@@ -246,5 +252,5 @@ export {
   obtenerTitulada,
   editarTitulada,
   eliminarTitulada,
-  obtenerCompetencia
+  obtenerCompetencia,
 };
