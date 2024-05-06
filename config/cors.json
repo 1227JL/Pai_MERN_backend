@@ -1,8 +1,8 @@
 [
-    {
-      "origin": ["http://localhost:5173/, http://localhost:4000/"],  
-      "method": ["GET", "POST"],          
-      "responseHeader": ["Content-Type"], 
-      "maxAgeSeconds": 3600              
-    }
-  ]
+  {
+    "origin": ["http://localhost:5173"],
+    "method": ["GET"],
+    "responseHeader": ["Content-Type"],
+    "maxAgeSeconds": 3600
+  }
+]

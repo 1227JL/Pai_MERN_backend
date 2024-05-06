@@ -9,9 +9,7 @@ import {
   obtenerCompetencia,
 } from "../controllers/tituladaController.js";
 import checkAuth from "../middleware/checkAuth.js";
-import { Storage } from '@google-cloud/storage'
-
-const cloudStorage = new Storage();
+import { getFileTitulada } from "../services/tituladaServices.js";
 
 const router = express.Router();
 
@@ -41,5 +39,6 @@ router
   .delete(checkAuth, eliminarTitulada);
 
 router.get("/:id/:competencia", obtenerCompetencia);
+router.get('/file-access/:tituladaName/:filename', checkAuth, getFileTitulada)
 
 export default router;

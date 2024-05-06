@@ -1,19 +1,9 @@
 import Aprendiz from "../models/Aprendiz.js";
 import Titulada from "../models/Titulada.js";
-import fs from "fs";
 import { spawn } from "child_process";
-<<<<<<< HEAD
-import mongoose from "mongoose";
-=======
-import mongoose from 'mongoose';
->>>>>>> 6297520c47737c3784f89f34d09bd9ab2dc0f68c
 import { asociarTituladaAAprendiz } from "../services/aprendizService.js";
-
-function eliminarArchivoSubido(filePath) {
-  if (filePath && fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
-  }
-}
+import { uploadFile } from "../config/google_cloud.js";
+import sanitizeString from "../helpers/sanitazeString.js";
 
 const registrarAprendiz = async (req, res) => {
   const { id } = req.params;
@@ -67,10 +57,10 @@ const registrarAprendiz = async (req, res) => {
 
     const dateString = objetoExtraido.nacimiento;
     const dateParts = dateString.split("/");
-
+      
     // Cambia el orden de DD/MM/YYYY a YYYY-MM-DD
     const nacimiento = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
-
+    
     const nuevoAprendiz = new Aprendiz({
       ...req.body,
       nombre: objetoExtraido.nombre,
@@ -78,20 +68,28 @@ const registrarAprendiz = async (req, res) => {
       nacimiento: nacimiento,
       rh: objetoExtraido.rh,
       estado:
-        tituladaExiste.estado == "Convocatoria"
-          ? "Matriculado"
-          : tituladaExiste.estado,
+      tituladaExiste.estado == "Convocatoria"
+      ? "Matriculado"
+      : tituladaExiste.estado,
       documentoAdjunto: req.file.filename,
       creador: req.usuario._id,
     });
 
+    const destinationBlobName = `aprendices/${sanitizeString(objetoExtraido.nombre)}_${objetoExtraido.documento}/${req.file.filename}`;
+
     await nuevoAprendiz.save();
+
+    try {
+      await uploadFile(req.file.path, destinationBlobName);
+    } catch (error) {
+      console.error("Error subiendo el archivo:", error);
+      res.status(500).send("Error al subir el archivo");
+    }
     tituladaExiste.aprendices.push(nuevoAprendiz);
     tituladaExiste.save();
     res.json(nuevoAprendiz);
   } catch (error) {
     console.error(error.message);
-    eliminarArchivoSubido(req.file?.path); // Eliminar el archivo subido solo en caso de error
     return res
       .status(500)
       .json({ msg: error.message || "Hubo un error al procesar la solicitud" });
@@ -138,14 +136,10 @@ const eliminarAprendiz = async (req, res) => {
 const agregarTituladaAAprendiz = async (req, res) => {
   try {
     const { idAprendiz, idTitulada } = req.params; // Suponiendo que pasas estos parámetros en la URL
-<<<<<<< HEAD
     const aprendizActualizado = await asociarTituladaAAprendiz(
       idAprendiz,
       idTitulada
     );
-=======
-    const aprendizActualizado = await asociarTituladaAAprendiz(idAprendiz, idTitulada);
->>>>>>> 6297520c47737c3784f89f34d09bd9ab2dc0f68c
     res.status(200).json(aprendizActualizado);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -158,7 +152,6 @@ const obtenerTituladasAprendiz = async (req, res) => {
 
     // Encuentra el aprendiz por ID y pobla el array de 'tituladas'
     const aprendiz = await Aprendiz.findById(id)
-<<<<<<< HEAD
       .select("tituladas -_id") // Selecciona solo el campo 'tituladas' y excluye '_id'
       .populate({
         path: "tituladas", // Especifica el path que quieres poblar
@@ -178,12 +171,6 @@ const obtenerTituladasAprendiz = async (req, res) => {
             select: 'bloque numero'
           }
         ]
-=======
-      .select('tituladas -_id') // Selecciona solo el campo 'tituladas' y excluye '_id'
-      .populate({
-        path: 'tituladas', // Especifica el path que quieres poblar
-        select: 'programa ficha titulo jornada estado modalidad instructores ambiente', // Campos específicos para incluir en la población
->>>>>>> 6297520c47737c3784f89f34d09bd9ab2dc0f68c
       });
 
     if (!aprendiz) {
@@ -197,7 +184,6 @@ const obtenerTituladasAprendiz = async (req, res) => {
   }
 };
 
-<<<<<<< HEAD
 export {
   registrarAprendiz,
   obtenerAprendiz,
@@ -205,6 +191,3 @@ export {
   agregarTituladaAAprendiz,
   obtenerTituladasAprendiz,
 };
-=======
-export { registrarAprendiz, obtenerAprendiz, eliminarAprendiz, agregarTituladaAAprendiz, obtenerTituladasAprendiz };
->>>>>>> 6297520c47737c3784f89f34d09bd9ab2dc0f68c

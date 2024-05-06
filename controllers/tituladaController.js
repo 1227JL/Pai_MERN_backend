@@ -3,13 +3,9 @@ import Instructor from "../models/Instructor.js";
 import Titulada from "../models/Titulada.js";
 import fs from "fs";
 import capitalize from "../helpers/capitalize.js";
-import path, { dirname } from "path";
-import { fileURLToPath } from "url";
 import sanitizeString from "../helpers/sanitazeString.js";
-import { uploadFile } from "../config/google_cloud.js";
-import {Storage} from '@google-cloud/storage'
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { deleteDirectory, uploadFile } from "../config/google_cloud.js";
+import Aprendiz from "../models/Aprendiz.js";
 
 const crearTitulada = async (req, res) => {
   try {
@@ -66,7 +62,7 @@ const crearTitulada = async (req, res) => {
       objetoExtraido.titulada_info.programa
     );
     const destinationBlobName = `tituladas/${programaSanitizado}_${fichaSanitizada}/${req.file.filename}`;
-      
+
     const titulada = new Titulada({
       ...req.body,
       ficha: fichaSanitizada,
@@ -205,26 +201,16 @@ const eliminarTitulada = async (req, res) => {
       return res.status(404).json({ msg: error.message });
     }
 
+    // Formato del nombre del directorio basado en la titulada
+    const directoryName = `tituladas/${titulada.programa
+      .toLowerCase()
+      .replace(/\s+/g, "-")}_${titulada.ficha}`;
+
+    // Elimina el directorio y todos sus contenidos en Google Cloud Storage
+    await deleteDirectory(directoryName);
+
     // Elimina todos los aprendices asociados a la titulada
     await Aprendiz.deleteMany({ tituladaId: id });
-
-    // Construye la ruta del archivo de manera segura
-    const archivoPath = path.join(
-      __dirname,
-      "..",
-      "uploads",
-      "disenosCurriculares",
-      titulada.archivoAdjunto
-    );
-
-    // Verifica si el archivo existe y luego intenta eliminarlo
-    if (fs.existsSync(archivoPath)) {
-      fs.unlinkSync(archivoPath);
-    } else {
-      console.log(
-        "El archivo no existe, pero el registro será eliminado de todos modos."
-      );
-    }
 
     // Elimina el registro de la base de datos
     await titulada.deleteOne();
