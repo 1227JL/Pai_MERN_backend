@@ -1,6 +1,5 @@
 import Titulada from "../models/Titulada.js";
 import { generateV4ReadSignedUrl } from "../config/google_cloud.js";
-import Instructor from "../models/Instructor.js";
 
 const getFileTitulada = async (req, res) => {
   const { tituladaName, filename } = req.params;
