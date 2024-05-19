@@ -9,7 +9,7 @@ import {
   obtenerCompetencia,
 } from "../controllers/tituladaController.js";
 import checkAuth from "../middleware/checkAuth.js";
-import { getFileTitulada } from "../services/tituladaServices.js";
+import { getFileTitulada, obtenerAprendices, obtenerCompetencias, obtenerInstructores } from "../services/tituladaServices.js";
 
 const router = express.Router();
 
@@ -38,7 +38,11 @@ router
   .put(checkAuth, upload.single("file"), editarTitulada)
   .delete(checkAuth, eliminarTitulada);
 
-router.get("/:id/:competencia", obtenerCompetencia);
+router.get("/:id/aprendices", checkAuth, obtenerAprendices);
+router.get("/:id/instructores", checkAuth, obtenerInstructores);
+router.get("/:id/competencias", checkAuth, obtenerCompetencias);
+
+router.get("/:id/:competencia", checkAuth, obtenerCompetencia);
 router.get('/file-access/:tituladaName/:filename', checkAuth, getFileTitulada)
 
 export default router;
