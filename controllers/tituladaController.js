@@ -80,9 +80,6 @@ const crearTitulada = async (req, res) => {
 
     await titulada.save();
 
-    await Instructor.findByIdAndUpdate(titulada.instructores[0].instructor, {
-      $push: { tituladas: titulada._id }
-    });
     // Subir el archivo al bucket de GCS con la nueva estructura de directorio sanitizada
     try {
       await uploadFile(req.file.path, destinationBlobName);
@@ -106,7 +103,7 @@ const crearTitulada = async (req, res) => {
 
 const obtenerTituladas = async (req, res) => {
   const tituladas = await Titulada.find()
-    .select("-instructores -competencias -aprendices -updatedAt -__v")
+    .select("-instructores -updatedAt -__v")
     .populate("ambiente");
 
   res.json(tituladas);
@@ -120,26 +117,20 @@ const obtenerTitulada = async (req, res) => {
       path: "creador",
       select: "nombre email",
     })
-    .populate({
-      path: "instructores.instructor",
-      select: "nombre email"
-    })
+    .populate("instructores.instructor", "nombre email")
     .populate("ambiente", "bloque numero")
-    .select("-__v -aprendices -competencias");
+    .populate({
+      path: "aprendices",
+      select: "nombre email estado documento", // Solo incluye estos campos
+    })
+    .select("-__v -competencias.resultados_aprendizaje");
 
   if (!titulada) {
-    const error = new Error("Titulada no encontrada");
+    const error = new Error("Titulada no econtrada");
     return res.status(404).json({ msg: error.message });
   }
-
-  // Filtrar manualmente los instructores después de poblarlos
-  if (titulada && titulada.instructores) {
-    titulada.instructores = titulada.instructores.filter(instr => instr.aCargo);
-  }
-
   res.json(titulada);
 };
-
 
 const editarTitulada = async (req, res) => {
   const { id } = req.params;
