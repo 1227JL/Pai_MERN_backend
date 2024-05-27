@@ -8,7 +8,6 @@ import ambienteRoutes from "./routes/ambienteRoutes.js";
 import aprendizRoutes from "./routes/aprendizRoutes.js";
 import ingresoRoutes from "./routes/ingresoRoutes.js";
 import conexion from "./config/db.js";
-import { generateV4ReadSignedUrl } from "./config/google_cloud.js";
 
 dotenv.config();
 const app = express();

@@ -33,6 +33,14 @@ const registrar = async (req, res) => {
 const autenticar = async (req, res) => {
     const { email, password } = req.body
 
+    if (user.mail || user.userPrincipalName) {
+        if (user.mail.endsWith("@soy.sena.edu") || user.userPrincipalName.endsWith("@soy.sena.edu")) {
+          // Procesar el inicio de sesión
+        } else {
+          // Manejar usuarios de otros dominios o rechazar el acceso
+        }
+      }
+
     const usuario = await Usuario.findOne({email})
 
     if(!usuario){

@@ -6,6 +6,7 @@ export const emailRegistro = async (datos) => {
     const transport = nodemailer.createTransport({
         host: process.env.EMAIL_HOST,
         port: process.env.EMAIL_PORT,
+        secure: true, // true para 465, false para otros puertos
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS
@@ -35,12 +36,12 @@ export const emailRegistroInstructor = async (datos) => {
     const transport = nodemailer.createTransport({
         host: process.env.EMAIL_HOST,
         port: process.env.EMAIL_PORT,
+        secure: true, // true para 465, false para otros puertos
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS
         }
     });
-
     // Informacion del email
 
     const info = await transport.sendMail({
@@ -65,12 +66,12 @@ export const emailOlvidePassword = async (datos) => {
     const transport = nodemailer.createTransport({
         host: process.env.EMAIL_HOST,
         port: process.env.EMAIL_PORT,
+        secure: true, // true para 465, false para otros puertos
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS
         }
     });
-
     // Informacion del email
 
     const info = await transport.sendMail({

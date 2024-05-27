@@ -11,6 +11,7 @@
   "author": "Julian Lopez",
   "license": "ISC",
   "dependencies": {
+    "@azure/msal-node": "^2.8.1",
     "@google-cloud/storage": "^7.10.2",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
